@@ -1,0 +1,66 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"95SeVs6v8e\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Vehicle Tracking</span>\",\"col\":12}},{\"id\":\"k6q2T6hZq9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Monitoring\",\"col\":3}},{\"id\":\"9X3RwnZKrd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Delivery Routes\",\"col\":3}},{\"id\":\"DaFqWPhIt8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Monitoring\",\"col\":3}},{\"id\":\"p55lthdVy1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Trip Management\",\"col\":3}},{\"id\":\"LPMcwgQJxC\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"5CiVoudFyg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Assign vehicle and Check Delivery Note Status\",\"col\":3}}]",
+ "creation": "2025-09-04 15:27:27.636472",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "map",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Vehicle Tracking",
+ "links": [],
+ "modified": "2025-09-22 15:18:58.547174",
+ "modified_by": "Administrator",
+ "module": "vehicle tracking",
+ "name": "Vehicle Tracking",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 28.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Delivery Routes",
+   "link_to": "delivery-routes",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Trip Management",
+   "link_to": "trip-management",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Assign vehicle and Check Delivery Note Status",
+   "link_to": "Check Delivery Note Status and Vehicle Assigned",
+   "report_ref_doctype": "Delivery Note",
+   "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Monitoring",
+   "link_to": "monitoring",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Vehicle Monitoring",
+   "link_to": "vehicle-monitoring",
+   "type": "Page"
+  }
+ ],
+ "title": "Vehicle Tracking"
+}

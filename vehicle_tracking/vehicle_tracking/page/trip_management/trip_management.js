@@ -1,0 +1,207 @@
+frappe.pages['trip-management'].on_page_load = function(wrapper) {
+    var page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: 'Trip Management',
+        single_column: true
+    });
+								 
+	// Add Refresh button
+    page.set_primary_action("Refresh", function() {
+        let selected = $("#vehicle-select").val();
+        loadTrips(selected); // reload only trips
+    });
+
+    $(frappe.render_template("trip_management", {})).appendTo(page.main);
+
+    // fetch vehicles from Doctype and build select field
+    frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Vehicle",
+            fields: ["name"],
+            limit_page_length: 1000
+        },
+        callback: function(r) {
+            if (r.message) {
+                // build select field
+                let $select = $(`<select id="vehicle-select" class="form-control">
+                                    <option value="">Select Vehicle</option>
+                                    <option value="All">All</option>
+                                </select>`);
+
+                // append vehicle options
+                r.message.forEach(v => {
+                    $select.append(`<option value="${v.name}">${v.name}</option>`);
+                });
+
+                // inject into container
+                $("#vehicle-select-container").html($select);
+
+                // on change, load trips
+                $select.on("change", function() {
+                    let selected = $(this).val();
+                    loadTrips(selected);
+                });
+
+                // Restore saved vehicle AFTER binding change event
+                let savedVehicle = sessionStorage.getItem("trip_management_selected_vehicle");
+                if (savedVehicle) {
+                    $select.val(savedVehicle).trigger("change");  
+                    sessionStorage.removeItem("trip_management_selected_vehicle");
+                }  
+            }
+        }
+    });
+
+    // eusable function to load trips
+    function loadTrips(vehicleName) {
+        if (!vehicleName) {
+            $("#trip-results-container").html("<p>Please select a vehicle</p>");
+            return;
+        }
+
+        frappe.call({
+            method:"vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.get_trips_by_vehicle",
+            args:{ "vehicle_name": vehicleName },
+            callback:function(r){
+                if (r.message){
+                    renderTrips(r.message);
+                }
+            }
+        });
+    }
+
+    // reusable function to render trips
+    function renderTrips(data) {
+        let html = `<table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Vehicle</th>
+                                <th>Trip Status</th>
+                                <th>Trip ID</th>
+                                <th>Delivery IDs</th>
+                                <th>Change Delivery Status</th>
+                            </tr>
+                        </thead><tbody>`;
+
+        Object.keys(data).forEach(vehicle => {
+            data[vehicle].forEach(trip => {
+                let deliveryHtml = trip.delivery_id.length > 0
+                    ? trip.delivery_id.map(id => `<div>${id}</div>`).join("")
+                    : "";
+                
+                let buttonHtml = trip.delivery_id.length > 0
+                ? trip.delivery_id.map(id => {
+                    let isCompleted = trip.completed_delivery_ids && trip.completed_delivery_ids.includes(id);
+
+                    let btnClass = isCompleted ? "btn-success" : "btn-secondary";
+                    let btnText = isCompleted ? "Completed" : "Mark Completed";
+                    let disabled = isCompleted ? "disabled" : "";
+
+                    return `
+                        <div class="mb-1">
+                            <button class="btn btn-sm ${btnClass} complete-delivery-btn" 
+                                    data-delivery="${id}" ${disabled}>
+                                ${btnText}
+                            </button>
+                        </div>
+                    `;
+                }).join("")
+                : "";
+
+                // Button styles based on status
+                let startClass = "btn-primary", stopClass = "btn-primary";
+                let startDisabled = "", stopDisabled = "";
+
+                if (trip.status === "Scheduled") {
+					startDisabled = "";
+					stopDisabled = "disabled";
+					stopClass = "btn-primary";
+					startClass = "btn-primary";
+                } else if (trip.status === "In-Transit") {
+ 					startDisabled = "disabled";
+					stopDisabled = "";
+					startClass = "btn-success";
+					stopClass = "btn-primary";
+                } else if (trip.status === "Completed") {
+                    startDisabled = "disabled";
+					stopDisabled = "disabled";
+					startClass = "btn-primary";
+					stopClass = "btn-danger"; 
+                }
+
+                // Action buttons
+                let actionButtons = `<div class="d-flex flex-column align-items-center">
+                                        <button class="btn btn-sm rounded-circle action-btn start-trip-btn ${startClass}" 
+                                                data-trip="${trip.trip_id}" title="Start Trip" ${startDisabled}>▶</button><br>
+                                        <button class="btn btn-sm rounded-circle action-btn stop-trip-btn ${stopClass}" 
+                                                data-trip="${trip.trip_id}" title="Stop Trip" ${stopDisabled}>■</button>
+                                    </div>`;
+
+                html += `<tr>
+                            <td class="text-center">${actionButtons}</td>
+                            <td>${vehicle}</td>
+                            <td>${trip.status || ""}</td>
+                            <td>${trip.trip_id}</td>
+                            <td>${deliveryHtml}</td>
+                            <td>${buttonHtml}</td>
+                        </tr>`;
+            });
+        });
+
+        html += `</tbody></table>`;
+        $("#trip-results-container").html(html);
+
+        // attach button events
+        bindTripEvents();
+    }
+
+    //  reusable function to bind events after rendering
+    function bindTripEvents() {
+        // Delivery Complete
+        $(".complete-delivery-btn").on("click", function() {
+            let deliveryId = $(this).data("delivery");   
+            frappe.call({
+                method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.mark_delivery_completed",
+                args: { "delivery_id": deliveryId },
+                callback: function(res) {
+                    if (!res.exc) {
+                        frappe.show_alert({message: `Delivery ${deliveryId} Completed`, indicator: "green"}, 5);
+                        loadTrips($("#vehicle-select").val()); // refresh table only
+                    }
+                }
+            });
+        });
+
+        // Start Trip
+        $(".start-trip-btn").on("click", function() {
+            let tripId = $(this).data("trip");
+            frappe.call({
+                method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.update_trip_status",
+                args: { "trip_id": tripId, "status": "In-Transit" },
+                callback: function(res){
+                    if(!res.exc){
+                        frappe.show_alert({message: `Trip ${tripId} Started`, indicator: "green"}, 5);
+                        loadTrips($("#vehicle-select").val()); // refresh table only
+                    }
+                }
+            });
+        });
+
+        // Stop Trip
+        $(".stop-trip-btn").on("click", function() {
+            let tripId = $(this).data("trip");
+            frappe.call({
+                method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.update_trip_status",
+                args: { "trip_id": tripId, "status": "Completed" },
+                callback: function(res){
+                    if(!res.exc){
+                        frappe.show_alert({message: `Trip ${tripId} Completed`, indicator: "red"}, 5);
+                        loadTrips($("#vehicle-select").val()); // refresh table only
+                    }
+                }
+            });
+        });
+    }
+};

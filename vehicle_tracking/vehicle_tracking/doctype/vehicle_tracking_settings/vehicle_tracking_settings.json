@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-04 16:19:24.070261",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "wialon_token",
+  "wialon_base_url",
+  "wialon_token_live",
+  "wialon_session_id",
+  "wialon_gis_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "wialon_token",
+   "fieldtype": "Data",
+   "label": "Wialon Token"
+  },
+  {
+   "fieldname": "wialon_base_url",
+   "fieldtype": "Data",
+   "label": "Wialon Base URL"
+  },
+  {
+   "fieldname": "wialon_token_live",
+   "fieldtype": "Data",
+   "label": "Wialon Token Live"
+  },
+  {
+   "fieldname": "wialon_session_id",
+   "fieldtype": "Data",
+   "label": "Wialon Session Id"
+  },
+  {
+   "fieldname": "wialon_gis_id",
+   "fieldtype": "Data",
+   "label": "Wialon GIS ID"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-09-16 13:37:50.303530",
+ "modified_by": "Administrator",
+ "module": "vehicle tracking",
+ "name": "Vehicle Tracking Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
