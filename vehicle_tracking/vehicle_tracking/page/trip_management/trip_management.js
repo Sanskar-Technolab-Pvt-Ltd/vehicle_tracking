@@ -5,7 +5,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
         single_column: true
     });
 								 
-	// Add Refresh button
+    // Add Refresh button
     page.set_primary_action("Refresh", function() {
         let selected = $("#vehicle-select").val();
         loadTrips(selected); // reload only trips
@@ -53,7 +53,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
         }
     });
 
-    // eusable function to load trips
+    // reusable function to load trips
     function loadTrips(vehicleName) {
         if (!vehicleName) {
             $("#trip-results-container").html("<p>Please select a vehicle</p>");
@@ -82,33 +82,42 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                                 <th>Trip ID</th>
                                 <th>Delivery IDs</th>
                                 <th>Change Delivery Status</th>
+                                <th>Time Taken</th>
                             </tr>
                         </thead><tbody>`;
 
         Object.keys(data).forEach(vehicle => {
             data[vehicle].forEach(trip => {
-                let deliveryHtml = trip.delivery_id.length > 0
-                    ? trip.delivery_id.map(id => `<div>${id}</div>`).join("")
-                    : "";
-                
-                let buttonHtml = trip.delivery_id.length > 0
-                ? trip.delivery_id.map(id => {
-                    let isCompleted = trip.completed_delivery_ids && trip.completed_delivery_ids.includes(id);
+                let deliveryHtml = "", buttonHtml = "", timeHtml = "";
 
-                    let btnClass = isCompleted ? "btn-success" : "btn-secondary";
-                    let btnText = isCompleted ? "Completed" : "Mark Completed";
-                    let disabled = isCompleted ? "disabled" : "";
+                if (trip.delivery_id.length > 0) {
+                    trip.delivery_id.forEach(id => {
+                        let isCompleted = trip.completed_delivery_ids && trip.completed_delivery_ids.includes(id);
+                        let timeTaken = (trip.delivery_times && trip.delivery_times[id]) ? trip.delivery_times[id] : "";
 
-                    return `
-                        <div class="mb-1">
-                            <button class="btn btn-sm ${btnClass} complete-delivery-btn" 
-                                    data-delivery="${id}" ${disabled}>
-                                ${btnText}
-                            </button>
-                        </div>
-                    `;
-                }).join("")
-                : "";
+                        // Delivery ID list
+                        deliveryHtml += `<div>${id}</div>`;
+
+                        // Buttons
+                        let btnClass = isCompleted ? "btn-success" : "btn-secondary";
+                        let btnText = isCompleted ? "Completed" : "Mark Completed";
+                        let disabled = isCompleted ? "disabled" : "";
+
+                        buttonHtml += `
+                            <div class="mb-1">
+                                <button class="btn btn-sm ${btnClass} complete-delivery-btn" 
+                                        data-delivery="${id}" ${disabled}>
+                                    ${btnText}
+                                </button>
+                            </div>
+                        `;
+
+                        // Time column
+                        timeHtml += `<div class="delivery-time" data-delivery="${id}">
+                                        ${isCompleted && timeTaken ? timeTaken : ""}
+                                     </div>`;
+                    });
+                }
 
                 // Button styles based on status
                 let startClass = "btn-primary", stopClass = "btn-primary";
@@ -117,17 +126,13 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                 if (trip.status === "Scheduled") {
 					startDisabled = "";
 					stopDisabled = "disabled";
-					stopClass = "btn-primary";
-					startClass = "btn-primary";
                 } else if (trip.status === "In-Transit") {
  					startDisabled = "disabled";
 					stopDisabled = "";
 					startClass = "btn-success";
-					stopClass = "btn-primary";
                 } else if (trip.status === "Completed") {
                     startDisabled = "disabled";
 					stopDisabled = "disabled";
-					startClass = "btn-primary";
 					stopClass = "btn-danger"; 
                 }
 
@@ -146,6 +151,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                             <td>${trip.trip_id}</td>
                             <td>${deliveryHtml}</td>
                             <td>${buttonHtml}</td>
+                            <td>${timeHtml}</td>
                         </tr>`;
             });
         });
@@ -157,51 +163,85 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
         bindTripEvents();
     }
 
-    //  reusable function to bind events after rendering
+    // reusable function to bind events after rendering
     function bindTripEvents() {
-        // Delivery Complete
+        // Confirm before marking delivery complete
         $(".complete-delivery-btn").on("click", function() {
-            let deliveryId = $(this).data("delivery");   
-            frappe.call({
-                method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.mark_delivery_completed",
-                args: { "delivery_id": deliveryId },
-                callback: function(res) {
-                    if (!res.exc) {
-                        frappe.show_alert({message: `Delivery ${deliveryId} Completed`, indicator: "green"}, 5);
-                        loadTrips($("#vehicle-select").val()); // refresh table only
-                    }
+            let deliveryId = $(this).data("delivery");
+
+            frappe.confirm(
+                'Do you really want to mark this delivery as completed?',
+                function() {
+                    frappe.call({
+                        method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.mark_delivery_completed",
+                        args: { "delivery_id": deliveryId },
+                        callback: function(res) {
+                            if (!res.exc && res.message.success) {
+                                let timeTaken = res.message.time_taken;
+                                frappe.show_alert({
+                                    message: `Delivery ${deliveryId} Completed in ${timeTaken}`,
+                                    indicator: "green"
+                                }, 5);
+
+                                $(`button[data-delivery='${deliveryId}']`)
+                                    .text("Completed")
+                                    .removeClass("btn-secondary")
+                                    .addClass("btn-success")
+                                    .prop("disabled", true);
+
+                                $(`.delivery-time[data-delivery='${deliveryId}']`).text(timeTaken);
+                            }
+                        }
+                    });
+                },
+                function() {
+                    // No action on cancel
                 }
-            });
+            );
         });
 
-        // Start Trip
+        // Confirm before starting trip
         $(".start-trip-btn").on("click", function() {
             let tripId = $(this).data("trip");
-            frappe.call({
-                method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.update_trip_status",
-                args: { "trip_id": tripId, "status": "In-Transit" },
-                callback: function(res){
-                    if(!res.exc){
-                        frappe.show_alert({message: `Trip ${tripId} Started`, indicator: "green"}, 5);
-                        loadTrips($("#vehicle-select").val()); // refresh table only
-                    }
-                }
-            });
+
+            frappe.confirm(
+                'Do you really want to start this trip?',
+                function() {
+                    frappe.call({
+                        method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.update_trip_status",
+                        args: { "trip_id": tripId, "status": "In-Transit" },
+                        callback: function(res){
+                            if(!res.exc){
+                                frappe.show_alert({message: `Trip ${tripId} Started`, indicator: "green"}, 5);
+                                loadTrips($("#vehicle-select").val());
+                            }
+                        }
+                    });
+                },
+                function() { }
+            );
         });
 
-        // Stop Trip
+        // Confirm before stopping trip
         $(".stop-trip-btn").on("click", function() {
             let tripId = $(this).data("trip");
-            frappe.call({
-                method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.update_trip_status",
-                args: { "trip_id": tripId, "status": "Completed" },
-                callback: function(res){
-                    if(!res.exc){
-                        frappe.show_alert({message: `Trip ${tripId} Completed`, indicator: "red"}, 5);
-                        loadTrips($("#vehicle-select").val()); // refresh table only
-                    }
-                }
-            });
+
+            frappe.confirm(
+                'Do you really want to complete this trip?',
+                function() {
+                    frappe.call({
+                        method: "vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.update_trip_status",
+                        args: { "trip_id": tripId, "status": "Completed" },
+                        callback: function(res){
+                            if(!res.exc){
+                                frappe.show_alert({message: `Trip ${tripId} Completed`, indicator: "red"}, 5);
+                                loadTrips($("#vehicle-select").val());
+                            }
+                        }
+                    });
+                },
+                function() { }
+            );
         });
     }
 };

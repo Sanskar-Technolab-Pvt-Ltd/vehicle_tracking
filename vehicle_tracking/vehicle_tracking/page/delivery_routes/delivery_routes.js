@@ -13,6 +13,8 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
         <div style="margin-bottom: 15px;">
             <label><input type="radio" name="result-mode" value="trip" checked> Select Delivery Trip</label>
             &nbsp;&nbsp;
+            <label><input type="radio" name="result-mode" value="delivery"> Select Delivery Note</label>
+            &nbsp;&nbsp;
             <label><input type="radio" name="result-mode" value="vehicle"> Select Vehicle</label>
         </div>
         <div id="mode-input-container"></div>
@@ -30,6 +32,8 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
         let selected = $(this).val();
         if (selected === "trip") {
             loadTripMode();
+        } else if (selected === "delivery") {
+            loadDelivery();
         } else {
             loadVehicleMode();
         }
@@ -66,6 +70,43 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
                     });
                 } else {
                     $("#mode-input-container").html("<p>No trips found</p>");
+                }
+            }
+        });
+    }
+
+    function loadDelivery() {
+        $("#mode-input-container").html("<p>Loading Delivery Notes..</p>");
+        frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+                doctype: "Delivery Note",
+                fields: ["name"],
+                limit_page_length: 1000
+            },
+            callback: function(r) {
+                if (r.message && r.message.length) {
+                    let $select = $(`
+                        <select id="delivery-select" class="form-control">
+                            <option value="">Select Delivery Note</option>
+                        </select>
+                    `);
+
+                    r.message.forEach(v => {
+                        $select.append(`<option value="${v.name}">${v.name}</option>`);
+                    });
+
+                    $("#mode-input-container").html($select);
+
+                    $select.on("change", function() {
+                        $("#trip-results-container").empty(); // clear previous map
+                        let selectedDelivery = $(this).val();
+                        if (selectedDelivery) {
+                            getRoute({ delivery: selectedDelivery });
+                        }
+                    });
+                } else {
+                    $("#mode-input-container").html("<p>No trips found from API</p>");
                 }
             }
         });
@@ -131,28 +172,180 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
         });
     }
 
-    // ===== Render Map =====
-    function renderTrips(points) {
-        $("#trip-results-container").html('<div id="trip-map" style="height: 800px; width: 100%;"></div>');
+    function renderTrips(points, vehicle_name=null) {
+    $("#trip-results-container").html(`
+        <div id="trip-map" style="height: 800px; width: 100%;"></div>
+    `);
+    
+    let vehicle = $("#vehicle-select").val();
 
-        var map = L.map('trip-map').setView(points[0], 12);
+    var map = L.map('trip-map').setView(points[0], 12);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-        var latlngs = points.map(p => [p[0], p[1]]);
-        var polyline = L.polyline(latlngs, { color: 'blue', weight: 3, opacity: 0.8 }).addTo(map);
+    var latlngs = points.map(p => [p[0], p[1]]);
+    var polyline = L.polyline(latlngs, { color: 'blue', weight: 3, opacity: 0.8 }).addTo(map);
 
-        latlngs.forEach(coord => {
-            L.circleMarker(coord, {
-                radius: 1,
-                color: "green",
-                fillColor: "red",
-                fillOpacity: 0.5
-            }).addTo(map);
-        });
+    map.fitBounds(polyline.getBounds());
 
-        map.fitBounds(polyline.getBounds());
+    // ===== PLAYBACK VARIABLES =====
+    var playbackMarker = L.marker(latlngs[0]).addTo(map);
+    var index = 0;
+    var playing = false;
+    var intervalId = null;
+    var speed = 500; // default 1x (ms per step)
+
+    // ====== UPDATE MARKER FUNCTION ======
+    function updateMarkerPosition(i) {
+        if (i >= 0 && i < latlngs.length) {
+            playbackMarker.setLatLng(latlngs[i]);
+            if (vehicle_name) {
+                playbackMarker.bindPopup(`<b>Vehicle:</b> ${vehicle}`).openPopup();
+            }
+            sliderInput.value = i;
+        }
     }
+
+    function togglePlayback() {
+        if (!playing) {
+            playing = true;
+            playBtn.innerHTML = "⏸"; // pause icon
+            intervalId = setInterval(() => {
+                if (index < latlngs.length - 1) {
+                    updateMarkerPosition(index);
+                    index++;
+                } else {
+                    clearInterval(intervalId);
+                    playing = false;
+                    playBtn.innerHTML = "▶";
+                }
+            }, speed);
+        } else {
+            playing = false;
+            playBtn.innerHTML = "▶";
+            clearInterval(intervalId);
+        }
+    }
+
+    function stepForward() {
+        if (index < latlngs.length - 1) {
+            index++;
+            updateMarkerPosition(index);
+        }
+    }
+
+    function stepBackward() {
+        if (index > 0) {
+            index--;
+            updateMarkerPosition(index);
+        }
+    }
+
+    // ===== CUSTOM PLAYER CONTROL =====
+    var PlayerControl = L.Control.extend({
+        options: { position: 'topright' },
+        onAdd: function () {
+            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+            container.style.background = "#fff";
+            container.style.padding = "8px";
+            container.style.width = "320px";
+            container.style.fontSize = "13px";
+            container.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
+
+            // Vehicle name
+            var title = L.DomUtil.create('div', '', container);
+            title.innerHTML = `<b>${vehicle}</b>`;
+            title.style.marginBottom = "5px";
+
+            // Slider
+            sliderInput = L.DomUtil.create('input', '', container);
+            sliderInput.type = "range";
+            sliderInput.min = 0;
+            sliderInput.max = latlngs.length - 1;
+            sliderInput.value = 0;
+            sliderInput.style.width = "100%";
+            sliderInput.style.marginBottom = "5px";
+
+            L.DomEvent.on(sliderInput, 'input', function () {
+                index = parseInt(sliderInput.value);
+                updateMarkerPosition(index);
+            });
+
+            // Controls row
+            var controls = L.DomUtil.create('div', '', container);
+            controls.style.display = "flex";
+            controls.style.justifyContent = "space-between";
+            controls.style.alignItems = "center";
+
+            // Backward button
+            var backBtn = L.DomUtil.create('button', '', controls);
+            backBtn.innerHTML = "⏮";
+            backBtn.style.margin = "2px";
+
+            // Play button
+            playBtn = L.DomUtil.create('button', '', controls);
+            playBtn.innerHTML = "▶";
+            playBtn.style.margin = "2px";
+
+            // Forward button
+            var fwdBtn = L.DomUtil.create('button', '', controls);
+            fwdBtn.innerHTML = "⏭";
+            fwdBtn.style.margin = "2px";
+
+            // Speed select
+            var speedSelect = L.DomUtil.create('select', '', controls);
+            ["1x","2x","5x","10x"].forEach(v=>{
+                let opt = document.createElement("option");
+                opt.value = v;
+                opt.text = v;
+                speedSelect.appendChild(opt);
+            });
+            speedSelect.value = "1x";
+
+            // Event bindings
+            L.DomEvent.on(playBtn, 'click', function (e) {
+                L.DomEvent.stopPropagation(e);
+                L.DomEvent.preventDefault(e);
+                togglePlayback();
+            });
+
+            L.DomEvent.on(backBtn, 'click', function (e) {
+                L.DomEvent.stopPropagation(e);
+                L.DomEvent.preventDefault(e);
+                stepBackward();
+            });
+
+            L.DomEvent.on(fwdBtn, 'click', function (e) {
+                L.DomEvent.stopPropagation(e);
+                L.DomEvent.preventDefault(e);
+                stepForward();
+            });
+
+            L.DomEvent.on(speedSelect, 'change', function () {
+                let val = speedSelect.value.replace("x","");
+                let factor = parseInt(val);
+                speed = 500 / factor; // faster playback
+                if (playing) {
+                    clearInterval(intervalId);
+                    intervalId = setInterval(() => {
+                        if (index < latlngs.length - 1) {
+                            updateMarkerPosition(index);
+                            index++;
+                        } else {
+                            clearInterval(intervalId);
+                            playing = false;
+                            playBtn.innerHTML = "▶";
+                        }
+                    }, speed);
+                }
+            });
+
+            return container;
+        }
+    });
+    map.addControl(new PlayerControl());
+}
+
 };

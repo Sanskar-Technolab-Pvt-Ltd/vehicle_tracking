@@ -50,6 +50,28 @@ frappe.pages['monitoring'].on_page_load = function(wrapper) {
     });
 }
 
+        let notifPanel = $(`
+        <div id="notif-panel" style="
+            position:absolute; 
+            top:70px; 
+            right:10px; 
+            width:280px; 
+            max-height:200px; 
+            overflow-y:auto; 
+            background:#fff; 
+            border:1px solid #ccc; 
+            border-radius:6px; 
+            padding:4px; 
+            font-size:11px; 
+            box-shadow:0 2px 6px rgba(0,0,0,0.2);
+            z-index:1000;">
+            <h4 style="margin:0 0 6px; font-size:13px;">Notifications</h4>
+            <div id="notification-list"></div>
+        </div>
+    `);
+    $(wrapper).append(notifPanel);
+
+
     // Function to update markers
     function updateVehiclePositions() {
         frappe.call({
@@ -98,13 +120,43 @@ frappe.pages['monitoring'].on_page_load = function(wrapper) {
         });
     }
 
+
+    // --- Ignition Notifications update ---
+    function updateIgnitionNotifications() {
+        frappe.call({
+            method: "vehicle_tracking.vehicle_tracking.apis.notifications.get_notifications", 
+            callback: function(r) {
+                console.log(r.message)
+                if (r.message && r.message.length > 0) {
+                    let $list = $("#notification-list");
+                    r.message.forEach(item => {
+                        let row = `
+                            <div class="notification-item" 
+                                 style="padding:6px; margin-bottom:6px; border-bottom:1px solid #eee; background:#fafafa;">
+                                <b>${item.name}</b><br>
+                                ${item.text}
+                            </div>
+                        `;
+                        $list.prepend(row); // prepend new messages
+                    });
+
+                    // keep only last 20 notifications for performance
+                    // if ($list.children().length > 20) {
+                    //     $list.children().slice(20).remove();
+                    // }
+                }
+            }
+        });
+    }
+
     // poll every 10 seconds
     setInterval(updateVehiclePositions, 5000);
+    setInterval(updateIgnitionNotifications, 2000);
 
     // initial call immediately
     updateVehiclePositions();
+    updateIgnitionNotifications();
 };
-
 
 
 

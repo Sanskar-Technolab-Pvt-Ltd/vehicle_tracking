@@ -3,6 +3,7 @@
 # ast(Abstract Syntax Trees) : Module in python
 import frappe
 import ast
+from datetime import datetime
 
 
 def execute(filters=None):
@@ -77,7 +78,12 @@ def assign_vehicle_manually(delivery_notes,vehicle_name,driver_name):
 		doc = frappe.get_doc("Delivery Note", dn)
 
 		if doc.docstatus == 1:
-			frappe.db.set_value("Delivery Note", dn, {"custom_vehicle_assigned":vehicle_name,"custom_driver_assigned":driver_name})
+			frappe.db.set_value("Delivery Note", dn, {
+				"custom_vehicle_assigned":vehicle_name,
+				"custom_driver_assigned":driver_name,
+				"custom_delivery_status":"Completed",
+				"custom_delivery_complete_time":datetime.now()
+				})
 		else:
 			doc.custom_vehicle_assigned = vehicle_name
 			doc.custom_driver_assigned = driver_name

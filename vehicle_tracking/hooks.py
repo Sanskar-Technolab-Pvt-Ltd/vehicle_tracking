@@ -49,8 +49,12 @@ app_license = "mit"
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 doctype_js = {
     "Delivery Note": "public/js/delivery_note.js",
-    "Delivery Note":"public/js/delivery_note_list.js",
-    "Delivery Trip":"public/js/delivery_trip.js"
+    "Delivery Trip":"public/js/delivery_trip.js",
+}
+
+doctype_list_js = {
+    "Delivery Note": "public/js/delivery_note_list.js",
+    "Delivery Trip": "public/js/delivery_trip_list.js",
 }
 
 
@@ -153,7 +157,13 @@ doctype_js = {
 
 # Scheduled Tasks
 # ---------------
-
+# scheduler_events = {
+#     "cron": {
+#         # Every 5 seconds
+#         "*/5 * * * * *": [
+#             "vehicle_tracking.vehicle_tracking.apis.notifications.get_notifications"
+#         ],}
+# }
 # scheduler_events = {
 # 	"all": [
 # 		"vehicle_tracking.tasks.all"

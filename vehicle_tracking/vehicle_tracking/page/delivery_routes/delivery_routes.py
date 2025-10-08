@@ -2,8 +2,13 @@ import frappe
 import requests
 from datetime import datetime, timezone
 
+from vehicle_tracking.vehicle_tracking.apis.get_wialon_data import wialon_login
+
+logger = frappe.logger("page",file_count=10)
+logger.setLevel("INFO")
+
 @frappe.whitelist()
-def get_route(trip=None, vehicle=None, start=None, end=None):
+def get_route(trip=None, delivery=None, vehicle=None, start=None, end=None):
     """
     Unified API for fetching vehicle route.
     - If trip is provided → use trip-based route.
@@ -25,6 +30,15 @@ def get_route(trip=None, vehicle=None, start=None, end=None):
             start_time = int(datetime.fromisoformat(start).replace(tzinfo=timezone.utc).timestamp())
             end_time = int(datetime.fromisoformat(end).replace(tzinfo=timezone.utc).timestamp())
         
+        elif delivery:
+            delivery_note_doc = frappe.get_doc("Delivery Note",delivery)
+            vehicle_doc = frappe.get_doc("Vehicle", delivery_note_doc.custom_vehicle_assigned)
+            trip = frappe.db.get_value("Delivery Stop", {"delivery_note": delivery}, "parent")
+
+            vehicle_id = vehicle_doc.custom_vehicle_id
+            start_time = trip.custom_start_time
+            end_time = delivery_note_doc.custom_delivery_complete_time
+
         else:
             return frappe.throw("Insufficient parameters. Provide either trip or vehicle + start + end.")
 
@@ -46,10 +60,22 @@ def get_route(trip=None, vehicle=None, start=None, end=None):
                 "flagsMask": 65281,
                 "loadCount": 10000
             }
+            print(params)
 
             url = f"{base_url}?svc=messages/load_interval&params={frappe.as_json(params)}&sid={sid}"
             response = requests.get(url)
             data = response.json()
+
+            if 'error' in data and data['error'] == 1:
+                logger.info(f"Invalid Session Id..Relogging again")
+                wialon_login()
+                settings = frappe.get_single("Vehicle Tracking Settings")
+                sid = settings.wialon_session_id
+
+                url = f"{base_url}?svc=messages/load_interval&params={frappe.as_json(params)}&sid={sid}"
+                response = requests.get(url)
+                data = response.json()
+                    
             messages = data.get("messages", [])
 
             if not messages:
@@ -59,14 +85,29 @@ def get_route(trip=None, vehicle=None, start=None, end=None):
             all_points.extend(points)
 
             last_time = messages[-1]["t"]
-            if last_time >= interval_end:
+            if last_time >= interval_end:   
                 break
 
             interval_start = last_time + 1
-
-        print(f"Total points fetched: {len(all_points)}")
         return all_points
 
     except Exception as e:
         frappe.log_error(f"Error fetching route: {e}", "Get Route API")
         return []
+
+
+@frappe.whitelist()
+def get_address(lon,lat):
+    Settings = frappe.get_single("Vehicle Tracking Settings")
+    GIS_BASE_URL = "https://geocode-maps.wialon.com/hst-api.wialon.com/gis_geocode"
+    GIS_ID = Settings.wialon_gis_id
+    
+    coords = [{"lon": float(lon), "lat": float(lat)}]
+    try:
+        url = f"{GIS_BASE_URL}?coords={frappe.as_json(coords)}&flags=1255211008&gis_sid={GIS_ID}"
+        result = requests.post(url)
+        data = result.json()
+    except Exception as e:  
+        logger.error(f"Error in get location function : {e}")
+
+    return data

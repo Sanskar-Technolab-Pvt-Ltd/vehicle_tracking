@@ -1,0 +1,67 @@
+<div class="custom-report">
+    <div class="form-group">
+      <label>Select Resource:</label>
+      <select id="resource-select" class="form-control">
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Select Template:</label>
+      <select id="template-select" class="form-control">
+    </select>
+      
+    </div>
+
+    <div class="form-group">
+      <label>Select Unit:</label>
+      <select id="vehicle-select" class="form-control"></select>
+    </div>
+
+    <div class="form-group">
+      <label>From Date:</label>
+      <input type="datetime-local" id="from-date" class="form-control" />
+    </div>
+
+    <div class="form-group">
+      <label>To Date:</label>
+      <input type="datetime-local" id="to-date" class="form-control" />
+    </div>
+
+    <div class="form-actions" style="margin-top:10px;">
+      <button class="btn btn-primary" id="execute-report">Execute Report</button>
+      <button class="btn btn-secondary" id="clear-result">Clear Result</button>
+    </div>
+  
+  <div id="loader" style="display:none; text-align:center; padding:20px;">
+  <i class="fa fa-spinner fa-spin" style="font-size:24px; color:#007bff;"></i>
+  <p>Generating report, please wait...</p>
+  </div>
+
+  </div>
+    <div id="log" style="margin-top:15px; color: green;"></div>
+    <div id="result-area" style="margin-top: 20px;"></div>
+  </div>
+
+
+<style>
+.table-scroll-vertical {
+    max-height: 400px; /* adjust as needed */
+    overflow-y: auto;
+    overflow-x: auto; /* horizontal scroll as well */
+    display: block;
+}
+
+/* Table sticky header */
+.table-scroll-vertical table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-scroll-vertical table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 5;
+    text-align: left;
+}
+</style>

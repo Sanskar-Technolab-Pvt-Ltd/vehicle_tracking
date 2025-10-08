@@ -33,6 +33,7 @@ def wialon_login():
             
     except Exception as e:
         logger.error(f"Error in wialon login : {e}")
+
     
 
 def get_vehicle_ids():
