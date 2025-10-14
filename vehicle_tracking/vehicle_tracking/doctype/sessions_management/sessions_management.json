@@ -9,7 +9,8 @@
   "session_name",
   "session_id",
   "updated_time",
-  "units_added"
+  "units_added",
+  "geolocation_id"
  ],
  "fields": [
   {
@@ -34,12 +35,17 @@
    "fieldname": "units_added",
    "fieldtype": "Check",
    "label": "Units added"
+  },
+  {
+   "fieldname": "geolocation_id",
+   "fieldtype": "Data",
+   "label": "Geolocation ID"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-02 12:43:30.774888",
+ "modified": "2025-10-13 11:02:04.125042",
  "modified_by": "Administrator",
  "module": "vehicle tracking",
  "name": "Sessions Management",

@@ -8,7 +8,8 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
     // Add Refresh button
     page.set_primary_action("Refresh", function() {
         let selected = $("#vehicle-select").val();
-        loadTrips(selected); // reload only trips
+        let status = $("#trip-status-select").val();
+        loadTrips(selected,status); // reload only trips
     });
 
     $(frappe.render_template("trip_management", {})).appendTo(page.main);
@@ -37,10 +38,26 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                 // inject into container
                 $("#vehicle-select-container").html($select);
 
+                let $statusSelect = $(`
+                    <select id="trip-status-select" class="form-control" style="margin-top:10px;">
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="In-Transit">In-Transit</option>
+                        <option value="Completed">Completed</option>
+                    </select>`);
+                $("#trip-status-container").html($statusSelect);
+
+
                 // on change, load trips
                 $select.on("change", function() {
                     let selected = $(this).val();
-                    loadTrips(selected);
+                    let selectedStatus = $("#trip-status-select").val();
+                    loadTrips(selected,selectedStatus);
+                });
+
+                $statusSelect.on("change", function() {
+                    let selectedVehicle = $("#vehicle-select").val();
+                    let selectedStatus = $(this).val();
+                    loadTrips(selectedVehicle, selectedStatus);
                 });
 
                 // Restore saved vehicle AFTER binding change event
@@ -54,7 +71,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
     });
 
     // reusable function to load trips
-    function loadTrips(vehicleName) {
+    function loadTrips(vehicleName,tripStatus) {
         if (!vehicleName) {
             $("#trip-results-container").html("<p>Please select a vehicle</p>");
             return;
@@ -62,7 +79,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
 
         frappe.call({
             method:"vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.get_trips_by_vehicle",
-            args:{ "vehicle_name": vehicleName },
+            args:{ "vehicle_name": vehicleName, "trip_status": tripStatus},
             callback:function(r){
                 if (r.message){
                     renderTrips(r.message);
@@ -213,7 +230,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                         callback: function(res){
                             if(!res.exc){
                                 frappe.show_alert({message: `Trip ${tripId} Started`, indicator: "green"}, 5);
-                                loadTrips($("#vehicle-select").val());
+                                loadTrips($("#vehicle-select").val(),$("#trip-status-select").val());
                             }
                         }
                     });
@@ -235,7 +252,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                         callback: function(res){
                             if(!res.exc){
                                 frappe.show_alert({message: `Trip ${tripId} Completed`, indicator: "red"}, 5);
-                                loadTrips($("#vehicle-select").val());
+                                loadTrips($("#vehicle-select").val(),$("#trip-status-select").val());
                             }
                         }
                     });

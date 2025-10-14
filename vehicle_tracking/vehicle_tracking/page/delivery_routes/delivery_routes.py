@@ -22,22 +22,38 @@ def get_route(trip=None, delivery=None, vehicle=None, start=None, end=None):
             vehicle_id = vehicle_doc.custom_vehicle_id
             start_time = int(trip_doc.custom_start_time.replace(tzinfo=timezone.utc).timestamp())
             end_time = int(trip_doc.custom_end_time.replace(tzinfo=timezone.utc).timestamp())
+            vehicle_name = trip_doc.vehicle
+            driver_details = [vehicle_doc.custom_driver_name, vehicle_doc.custom_driver_number]
+            delivery_details = []
+            for d in trip_doc.delivery_stops:
+                doc = frappe.get_doc('Customer',d.customer)
+                delivery_details.append([d.delivery_note,d.customer,doc.mobile_no])
         
         elif vehicle and start and end:
-            # --- Vehicle + datetime mode ---
+           
             vehicle_doc = frappe.get_doc("Vehicle", vehicle)
             vehicle_id = vehicle_doc.custom_vehicle_id
             start_time = int(datetime.fromisoformat(start).replace(tzinfo=timezone.utc).timestamp())
             end_time = int(datetime.fromisoformat(end).replace(tzinfo=timezone.utc).timestamp())
+            vehicle_name = vehicle
+            driver_details = [vehicle_doc.custom_driver_name, vehicle_doc.custom_driver_number]
+            delivery_details = []
         
         elif delivery:
             delivery_note_doc = frappe.get_doc("Delivery Note",delivery)
             vehicle_doc = frappe.get_doc("Vehicle", delivery_note_doc.custom_vehicle_assigned)
+
             trip = frappe.db.get_value("Delivery Stop", {"delivery_note": delivery}, "parent")
+            trip_doc = frappe.get_doc("Delivery Trip",trip)
+
+            customer_doc = frappe.get_doc('Customer',delivery_note_doc.customer)
 
             vehicle_id = vehicle_doc.custom_vehicle_id
-            start_time = trip.custom_start_time
-            end_time = delivery_note_doc.custom_delivery_complete_time
+            start_time = int(trip_doc.custom_start_time.replace(tzinfo=timezone.utc).timestamp())
+            end_time = int(delivery_note_doc.custom_delivery_complete_time.replace(tzinfo=timezone.utc).timestamp())
+            vehicle_name = trip_doc.vehicle
+            driver_details = [vehicle_doc.custom_driver_name, vehicle_doc.custom_driver_number]
+            delivery_details = [[trip,delivery_note_doc.customer,customer_doc.mobile_no]]
 
         else:
             return frappe.throw("Insufficient parameters. Provide either trip or vehicle + start + end.")
@@ -60,7 +76,6 @@ def get_route(trip=None, delivery=None, vehicle=None, start=None, end=None):
                 "flagsMask": 65281,
                 "loadCount": 10000
             }
-            print(params)
 
             url = f"{base_url}?svc=messages/load_interval&params={frappe.as_json(params)}&sid={sid}"
             response = requests.get(url)
@@ -89,7 +104,8 @@ def get_route(trip=None, delivery=None, vehicle=None, start=None, end=None):
                 break
 
             interval_start = last_time + 1
-        return all_points
+        # print("======>>>>>>>",all_points)
+        return all_points, vehicle_name, driver_details, delivery_details
 
     except Exception as e:
         frappe.log_error(f"Error fetching route: {e}", "Get Route API")

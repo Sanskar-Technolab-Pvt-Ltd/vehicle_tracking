@@ -9,7 +9,7 @@ from vehicle_tracking.vehicle_tracking.apis.common_utils import login, update_se
 def get_resource_details():
     try:
 
-        sid = login()
+        sid,gis_id = login()
         params = {
             "spec": {
                 "itemsType": "avl_resource",
@@ -56,8 +56,8 @@ def get_report_result(resource,template,unit,start,end):
         print(f"sid = {sid}")
         if sid == None:
             print("IFFFF")
-            sid = login()
-            update_session_id("Report Execution",sid)
+            sid,gis_id = login()
+            update_session_id("Report Execution",sid,gis_id)
         
         params = {
                 "reportResourceId": frappe.db.get_value("Resources", resource, "resource_id"),
@@ -81,9 +81,9 @@ def get_report_result(resource,template,unit,start,end):
         if "error" in data and data["error"] == 1:
             print(f"old sid : {sid}")
             print("2nd IFFFFFFFFFfff")
-            sid = login()
+            sid,gis_id = login()
             print(f"new sid : {sid}")
-            update_session_id("Report Execution",sid)
+            update_session_id("Report Execution",sid,gis_id)
 
             url = f"https://hst-api.wialon.com/wialon/ajax.html?svc=report/exec_report&params={frappe.as_json(params)}&sid={sid}"
             res = requests.post(url)

@@ -1,11 +1,15 @@
 import frappe
 import requests
+import json
 from vehicle_tracking.vehicle_tracking.apis.common_utils import login, update_session_id
+
+logger = frappe.logger("notifications",file_count=10)
+logger.setLevel("INFO")
 
 def update_data_flags():
     try:
-        sid = login()
-        update_session_id("notification",sid)
+        sid,gis_id = login()
+        update_session_id("notification",sid,gis_id)
 
         Settings = frappe.get_single("Vehicle Tracking Settings")
         WIALON_BASE_URL = Settings.wialon_base_url
@@ -69,5 +73,4 @@ def get_notifications():
         frappe.log_error(frappe.get_traceback(), f"Error in get notifications Function, {e}")
 
     
-
 

@@ -31,6 +31,7 @@ frappe.pages['custom-report'].on_page_load = function (wrapper) {
         // When resource changes, load templates
         $(document).on("change", "#resource-select", function () {
             loadTemplates();
+
         });
 
         // Handle Execute Report button

@@ -41,7 +41,7 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
 
     // ===== FUNCTIONS =====
     function loadTripMode() {
-        $("#mode-input-container").html("<p>Loading trips...</p>");
+        // $("#mode-input-container").html("<p>Loading trips...</p>");
         frappe.call({
             method: "frappe.client.get_list",
             args: {
@@ -112,6 +112,21 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
         });
     }
 
+
+    function setDefaultDates() {
+    let today = new Date();
+    let yyyy = today.getFullYear();
+    let mm = String(today.getMonth() + 1).padStart(2, '0'); // Months start at 0
+    let dd = String(today.getDate()).padStart(2, '0');
+
+    // From Date = today 00:00
+    let fromDate = `${yyyy}-${mm}-${dd}T00:00`;
+    // To Date = today 23:59
+    let toDate = `${yyyy}-${mm}-${dd}T23:59`;
+
+    return { fromDate, toDate }; // return values instead of directly setting
+    }
+
     function loadVehicleMode() {
         let $inputs = $(`
             <div>
@@ -125,6 +140,10 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
         `);
 
         $("#mode-input-container").html($inputs);
+
+        const { fromDate, toDate } = setDefaultDates();
+        $("#start-dt").val(fromDate);
+        $("#end-dt").val(toDate);
 
         frappe.call({
             method: "frappe.client.get_list",
@@ -163,21 +182,38 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
             method: "vehicle_tracking.vehicle_tracking.page.delivery_routes.delivery_routes.get_route",
             args: args,
             callback: function(r) {
-                if (r.message && r.message.length) {
-                    renderTrips(r.message);
-                } else {
-                    frappe.msgprint("No Route Available !!");
+                if (r.message && Array.isArray(r.message) && r.message.length) {
+                
+                const routePoints = r.message[0];   // first element: list of route points
+                const vehicleName = r.message[1];  // second element: vehicle name
+                const driverDetails = r.message[2];
+                const deliveryDetails = r.message[3];
+
+                // if routePoints list is empty, show message and stop
+                if (!routePoints || routePoints.length === 0) {
+                    $("#trip-results-container").text("No Route Available");
+                    $("#map").hide();   // hide map if it was visible
+                    return;
                 }
+
+                // valid route points found
+                $("#map").show();
+                renderTrips(routePoints, vehicleName, driverDetails, deliveryDetails);
+            } else {
+                $("#trip-results-container").text("No Route Available");
+                $("#map").hide();
             }
+        }
         });
     }
 
-    function renderTrips(points, vehicle_name=null) {
+
+    function renderTrips(points, vehicle_name=null, driver_details=null,deliveryDetails=null) {
     $("#trip-results-container").html(`
         <div id="trip-map" style="height: 800px; width: 100%;"></div>
     `);
     
-    let vehicle = $("#vehicle-select").val();
+    // let vehicle = $("#vehicle-select").val();
 
     var map = L.map('trip-map').setView(points[0], 12);
 
@@ -197,13 +233,83 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
     var intervalId = null;
     var speed = 500; // default 1x (ms per step)
 
+    if (vehicle_name && driver_details && deliveryDetails.length >0) {
+        let deliveryHTML = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: #555; margin-top: 6px;">
+            <thead>
+                <tr>
+                    <th style="padding: 4px 6px; border: 1px solid #ddd; background: #f2f2f2; text-align: left;">Delivery ID</th>
+                    <th style="padding: 4px 6px; border: 1px solid #ddd; background: #f2f2f2; text-align: left;">Customer Name</th>
+                    <th style="padding: 4px 6px; border: 1px solid #ddd; background: #f2f2f2; text-align: left;">Customer Number</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        deliveryDetails.forEach((item) => {
+            deliveryHTML += `
+                <tr>
+                    <td style="padding: 4px 6px; border: 1px solid #ddd;">${item[0]}</td>
+                    <td style="padding: 4px 6px; border: 1px solid #ddd;">${item[1]}</td>
+                    <td style="padding: 4px 6px; border: 1px solid #ddd;">${item[2]}</td>
+                </tr>`;
+        });
+
+        deliveryHTML += `
+                </tbody>
+            </table>
+        `;
+        // Popup content
+
+        var popupContent = `
+            <div style="font-family: Arial, sans-serif; font-size: 10px; line-height: 1.5; width: 260px;">   
+                <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">${vehicle_name}</h4>
+                <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">Driver Details</h4>
+                <div style="margin-bottom: 6px; font-size: 12px; color: #555;">
+                <i class="fa fa-user-circle"></i> ${driver_details[0]}<br>
+                ${driver_details[1]}
+                </div>
+                <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">Delivery Details</h4>
+                ${deliveryHTML}  
+            </div>`;
+            playbackMarker.bindPopup(popupContent).openPopup();
+        } 
+    
+        else if (vehicle_name && driver_details){
+            var popupContent = `
+            <div style="font-family: Arial, sans-serif; font-size: 10px; line-height: 1.5; width: 260px;">   
+                <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">${vehicle_name}</h4>
+                <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">Driver Details</h4>
+                <div style="margin-bottom: 6px; font-size: 12px; color: #555;">
+                <i class="fa fa-user-circle"></i> ${driver_details[0]}<br>
+                ${driver_details[1]}
+                </div>
+            </div>`;
+            playbackMarker.bindPopup(popupContent).openPopup();
+        }
+
+    // if (vehicle_name && driver_details) {
+
+        // var popupContent = `
+        //                 <div style="font-family: Arial, sans-serif; font-size: 10px; line-height: 1.5; width: 260px;">   
+        //                     <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">${vehicle_name}</h4>
+        //                     <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">Driver Details</h4>
+        //                     <div style="margin-bottom: 6px; font-size: 12px; color: #555;">
+        //                     <i class="fa fa-user-circle"></i> ${driver_details[0]}<br>
+        //                     ${driver_details[1]}
+        //                     </div>
+        //                     <h4 style="margin: 0 0 8px; font-size: 12px; font-weight: bold; color: #333;">Delivery Details</h4>     
+        //                 </div>`;
+
+    //     playbackMarker.bindPopup(popupContent).openPopup();}
+
     // ====== UPDATE MARKER FUNCTION ======
     function updateMarkerPosition(i) {
         if (i >= 0 && i < latlngs.length) {
             playbackMarker.setLatLng(latlngs[i]);
-            if (vehicle_name) {
-                playbackMarker.bindPopup(`<b>Vehicle:</b> ${vehicle}`).openPopup();
-            }
+            // if (vehicle_name) {
+            //     playbackMarker.bindPopup(`<b>Vehicle:</b> ${vehicle_name}`).openPopup();
+            // }
             sliderInput.value = i;
         }
     }
@@ -256,7 +362,8 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
 
             // Vehicle name
             var title = L.DomUtil.create('div', '', container);
-            title.innerHTML = `<b>${vehicle}</b>`;
+            // title.innerHTML = `<b>${vehicle}</b>`;
+            title.innerHTML = `<b>PlayBack</b>`;
             title.style.marginBottom = "5px";
 
             // Slider

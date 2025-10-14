@@ -135,7 +135,7 @@ def mark_delivery_completed(delivery_id):
 
 
 @frappe.whitelist()
-def get_trips_by_vehicle(vehicle_name):
+def get_trips_by_vehicle(vehicle_name,trip_status):
     """Fetch trips with delivery notes, completed deliveries, and time taken"""
     result = {}
 
@@ -143,12 +143,13 @@ def get_trips_by_vehicle(vehicle_name):
         if vehicle_name == "All":
             trips = frappe.get_all(
                 "Delivery Trip",
+                filters={"custom_trip_status": trip_status},
                 fields=["name", "custom_trip_status", "vehicle"]
             )
         else:
             trips = frappe.get_all(
                 "Delivery Trip",
-                filters={"vehicle": vehicle_name},
+                filters={"vehicle": vehicle_name,"custom_trip_status": trip_status},
                 fields=["name", "custom_trip_status", "vehicle"]
             )
 

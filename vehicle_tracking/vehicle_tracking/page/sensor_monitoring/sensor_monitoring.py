@@ -8,7 +8,7 @@ from vehicle_tracking.vehicle_tracking.apis.common_utils import login, update_se
 def get_sensor_details():
     try:
 
-        sid = login()
+        sid,gis_id = login()
         params = {
             "spec": {
                 "itemsType": "avl_unit",
@@ -81,8 +81,8 @@ def get_sensor_data(vehicle,sensors):
         sid = doc.session_id
 
         if sid == None:
-            sid = login()
-            update_session_id("Sensor Monitoring",sid)
+            sid,gis_id = login()
+            update_session_id("Sensor Monitoring",sid, gis_id)
 
         vehicle_doc = frappe.get_doc("Vehicle",vehicle)
         sens_ids = [row.id for row in vehicle_doc.custom_sensors if row.sensor_name in sensors]
@@ -106,8 +106,8 @@ def get_sensor_data(vehicle,sensors):
         data = req.json()
     
         if "error" in data and data["error"] == 1:
-            sid = login()
-            update_session_id("Sensor Monitoring",sid)
+            sid, gis_id = login()
+            update_session_id("Sensor Monitoring",sid, gis_id)
             url = f"https://hst-api.wialon.com/wialon/ajax.html?svc=unit/calc_last_message&params={frappe.as_json(params)}&sid={sid}"
             req = requests.post(url)
             data = req.json()

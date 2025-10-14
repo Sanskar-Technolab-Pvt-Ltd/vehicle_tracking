@@ -157,13 +157,13 @@ doctype_list_js = {
 
 # Scheduled Tasks
 # ---------------
-# scheduler_events = {
-#     "cron": {
-#         # Every 5 seconds
-#         "*/5 * * * * *": [
-#             "vehicle_tracking.vehicle_tracking.apis.notifications.get_notifications"
-#         ],}
-# }
+scheduler_events = {
+    "cron": {
+        # Every 5 seconds
+        "*/1 * * * * *": [
+            "vehicle_tracking.vehicle_tracking.page.vehicle_monitoring.vehicle_monitoring.get_vehicle_positions"
+        ],}
+}
 # scheduler_events = {
 # 	"all": [
 # 		"vehicle_tracking.tasks.all"
