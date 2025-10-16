@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestVehicleIgnitionStatus(FrappeTestCase):
+class TestVehicleMaintenance(FrappeTestCase):
 	pass

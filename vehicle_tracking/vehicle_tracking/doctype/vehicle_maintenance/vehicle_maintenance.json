@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-16 13:05:08.670081",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vehicle_name",
+  "section_break_zqni",
+  "mileage",
+  "service_date",
+  "column_break_iurf",
+  "due_service_value",
+  "next_service_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "vehicle_name",
+   "fieldtype": "Link",
+   "label": "Vehicle Name",
+   "options": "Vehicle"
+  },
+  {
+   "fieldname": "mileage",
+   "fieldtype": "Float",
+   "label": "Mileage"
+  },
+  {
+   "fieldname": "due_service_value",
+   "fieldtype": "Float",
+   "label": "Next Service Value (in km)"
+  },
+  {
+   "fieldname": "service_date",
+   "fieldtype": "Date",
+   "label": "Service Date"
+  },
+  {
+   "fieldname": "next_service_date",
+   "fieldtype": "Date",
+   "label": "Next Service Date"
+  },
+  {
+   "fieldname": "section_break_zqni",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_iurf",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-16 13:18:54.649161",
+ "modified_by": "Administrator",
+ "module": "vehicle tracking",
+ "name": "Vehicle Maintenance",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

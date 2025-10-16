@@ -167,7 +167,7 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
     // --------------------------
     frappe.realtime.on('live_vehicle_positions', function(vehicles) {
         // vehicles is a list of vehicle objects
-        console.log("Data Received========>>>>")
+        // console.log("Data Received========>>>>")
         showAllVehiclesOnMap(vehicles);
     });
 
@@ -223,7 +223,7 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
     // Listen for notification events
     // --------------------------
     frappe.realtime.on('wialon_notification', function(data) {
-        console.log("=======>>>> Notification Received.....")
+        // console.log("Notification Received......")
         let message = data?.text || "Vehicle event received";
         let name = data?.name || "Unknown";
         let notifItem = $(`

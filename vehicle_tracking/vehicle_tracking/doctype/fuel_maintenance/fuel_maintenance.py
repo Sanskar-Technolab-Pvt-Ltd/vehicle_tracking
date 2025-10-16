@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class VehicleIgnitionLogs(Document):
+class FuelMaintenance(Document):
 	pass

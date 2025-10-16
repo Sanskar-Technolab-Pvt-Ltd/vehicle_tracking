@@ -265,6 +265,7 @@ def send_delivery_completed_email(delivery_id,trip_id):
             subject=subject,
             message=message
         )
+        
         logger.info("EMAIL Sent Successfully !!!")
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Delivery Email Failed")
