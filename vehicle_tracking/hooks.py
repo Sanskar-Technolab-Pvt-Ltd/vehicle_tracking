@@ -159,7 +159,7 @@ doctype_list_js = {
 # ---------------
 scheduler_events = {
     "cron": {
-        # Every 5 seconds
+        # Every 1 minutes
         "*/1 * * * * *": [
             "vehicle_tracking.vehicle_tracking.page.vehicle_monitoring.vehicle_monitoring.get_vehicle_positions"
         ],}

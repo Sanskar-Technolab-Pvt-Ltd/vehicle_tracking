@@ -48,9 +48,10 @@ def get_wialon_notifications():
         notif_doc.save(ignore_permissions=True)
         frappe.db.commit()
 
-        # LOGIC FOR GEOFENCE ENTRY and EXIT EMAIL NOTIFICATION
-        # if data['name'] in ['Test OUTSIDE GEOFENCES']:
-        #     send_notification_mail(data['name'],data['text'])
+        # LOGIC FOR GEOFENCE ENTRY and EXIT OR VEHICLE STOPPAGE EMAIL NOTIFICATION
+        # NEED TO ADD NOTIFICATIONS NAME IN LIST FOR WHICH NOTIFICATION ALERT MAIL HAS TO BE SENT
+        if data['name'] in ['OUTSIDE GEOFENCES']:
+            send_notification_mail(data['name'],data['text'])
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(),f"Error in Wialon Webhook: {str(e)}")
@@ -65,7 +66,8 @@ def send_notification_mail(Notification,message):
         {Notification} - {message}
         """
         # recipients can be static or fetched dynamically
-        recipients = ["kimi@sanskartechnolab.com"]
+        # recipients = ["kimi@sanskartechnolab.com"]
+        recipients = ["s.darji@apex-steel.com"]
 
         frappe.sendmail(
             recipients=recipients,

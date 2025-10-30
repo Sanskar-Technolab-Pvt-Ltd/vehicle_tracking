@@ -258,7 +258,8 @@ def send_delivery_completed_email(delivery_id,trip_id):
         Completed Time: {doc.custom_delivery_complete_time} <br>
         """
         # recipients can be static or fetched dynamically
-        recipients = ["kimi@sanskartechnolab.com"]
+        # recipients = ["kimi@sanskartechnolab.com"]
+        recipients = ["s.darji@apex-steel.com"]
 
         frappe.sendmail(
             recipients=recipients,
@@ -266,6 +267,6 @@ def send_delivery_completed_email(delivery_id,trip_id):
             message=message
         )
         
-        logger.info("EMAIL Sent Successfully !!!")
+        logger.info("EMAIL Sent Successfully for Delivery Complete !!!")
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Delivery Email Failed")
