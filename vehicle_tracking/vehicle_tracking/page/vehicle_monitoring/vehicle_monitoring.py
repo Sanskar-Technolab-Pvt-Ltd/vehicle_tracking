@@ -108,7 +108,13 @@ def get_vehicle_positions():
             if trips:
                 for trip in trips:
                     doc = frappe.get_doc("Delivery Trip", trip["name"])
-                    trip["delivery_stops"] = [{"name":stop.delivery_note,"customer":stop.customer} for stop in doc.get("delivery_stops")]
+                    trip["delivery_stops"] = [{
+                        "name":stop.delivery_note,
+                        "customer":stop.customer,
+                        "location":stop.custom_location,
+                        "contact_no": frappe.db.get_value("Delivery Note",stop.delivery_note,"custom_site_contact_person_number")
+                        } 
+                        for stop in doc.get("delivery_stops")]
 
             vehicle_doc = frappe.get_doc("Vehicle",i["nm"])
 

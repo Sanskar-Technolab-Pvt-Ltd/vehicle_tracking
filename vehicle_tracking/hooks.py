@@ -50,6 +50,7 @@ app_license = "mit"
 doctype_js = {
     "Delivery Note": "public/js/delivery_note.js",
     "Delivery Trip":"public/js/delivery_trip.js",
+    "Vehicle":"public/js/vehicle.js"
 }
 
 doctype_list_js = {

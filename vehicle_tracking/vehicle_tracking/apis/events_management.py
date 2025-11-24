@@ -7,48 +7,61 @@ logger = frappe.logger("api",file_count=10)
 logger.setLevel("INFO")
 
 def update_session(Name,session_id):
-    session_doc = frappe.get_doc("Sessions Management",Name)
-    session_doc.session_id = session_id
-    session_doc.updated_time = datetime.now()
-    session_doc.save()
+    try:
 
-    logger.info(f"{Name} Session ID Updated.")
-
+        session_doc = frappe.get_doc("Sessions Management",Name)
+        session_doc.session_id = session_id
+        session_doc.updated_time = datetime.now()
+        session_doc.save()
+        # logger.info(f"{Name} Session ID Updated.")
+    except Exception as e:
+        frappe.log_error(f"Error in Update Session Function (Events Management) - {e}")
 
 def login():
-    Settings = frappe.get_single("Vehicle Tracking Settings")
-    WIALON_BASE_URL = Settings.wialon_base_url
-    WIALON_TOKEN = Settings.wialon_token_live
+    try:
 
-    login_result = requests.post(f'{WIALON_BASE_URL}?svc=token/login&params={{"token":"{WIALON_TOKEN}"}}&sid')
-    sid = login_result.json().get('eid')
-    return sid
+        Settings = frappe.get_single("Vehicle Tracking Settings")
+        WIALON_BASE_URL = Settings.wialon_base_url
+        WIALON_TOKEN = Settings.wialon_token_live
+
+        login_result = requests.post(f'{WIALON_BASE_URL}?svc=token/login&params={{"token":"{WIALON_TOKEN}"}}&sid')
+        sid = login_result.json().get('eid')
+        return sid
+    
+    except Exception as e:
+        frappe.log_error(f"Error in Login Function (Events Management) - {e}")
 
 def add_units_session(sid,units,Name):
+    try:
 
-    Settings = frappe.get_single("Vehicle Tracking Settings")
-    WIALON_BASE_URL = Settings.wialon_base_url
+        Settings = frappe.get_single("Vehicle Tracking Settings")
+        WIALON_BASE_URL = Settings.wialon_base_url
 
-    params = {
-        "mode":"add",
-        "units":units
-    }
+        params = {
+            "mode":"add",
+            "units":units
+        }
 
-    url = f"{WIALON_BASE_URL}?svc=events/update_units&params={frappe.as_json(params)}&sid={sid}"
-    req = requests.post(url)
-    res = req.json()
-
-    if "units" in res:
-        logger.info(f"Units added successfully into the session : {res}")
-
-    if "error" in res and res["error"]==1:
-        sid = login()
-        update_session(Name,sid)
         url = f"{WIALON_BASE_URL}?svc=events/update_units&params={frappe.as_json(params)}&sid={sid}"
         req = requests.post(url)
         res = req.json()
-        logger.info(f"Units added successfully into the New session : {res} ")
 
+        if "units" in res:
+            pass
+            # logger.info(f"Units added successfully into the session : {res}")
+            frappe.log_error(f"Units added successfully into the session : {res}")
+
+        if "error" in res and res["error"]==1:
+            sid = login()
+            update_session(Name,sid)
+            url = f"{WIALON_BASE_URL}?svc=events/update_units&params={frappe.as_json(params)}&sid={sid}"
+            req = requests.post(url)
+            res = req.json()
+            # logger.info(f"Units added successfully into the New session : {res} ")
+            frappe.log_error(f"Units added successfully into the New session : {res}")
+    
+    except Exception as e:
+        frappe.log_error(f"Error in Add units session function (events Management) - {e}")
 
 def events_check_updates(sid):
     try:
@@ -65,8 +78,8 @@ def events_check_updates(sid):
         return res
     
     except Exception as e:
-        logger.error(f"Error in events_check_updates. {e}")
-        logger.error(traceback.format_exc())
+        frappe.log_error(frappe.get_traceback(),f"Error in events_check_updates. {e}")
+        # logger.error(traceback.format_exc())
 
 def ignition_event():
     

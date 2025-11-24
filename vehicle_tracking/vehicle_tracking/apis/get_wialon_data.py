@@ -32,7 +32,8 @@ def wialon_login():
             logger.info(f"Login Successful and GIS id updated Sucessfully. New gis id : {gis_id}")
             
     except Exception as e:
-        logger.error(f"Error in wialon login : {e}")
+        # logger.error(f"Error in wialon login : {e}")
+        frappe.log_error(frappe.get_traceback(),f"Error in wialon login : {e}")
 
     
 
@@ -48,7 +49,6 @@ def get_search_items():
     WIALON_BASE_URL = Settings.wialon_base_url
     SESSION_ID = Settings.wialon_session_id
     vid_list = get_vehicle_ids()
-
 
     vehicle_ids = ",".join(str(id) for id in vid_list)
     params = {
@@ -69,7 +69,8 @@ def get_search_items():
         result = requests.post(url)
         data = result.json()
     except Exception as e:
-        logger.error(f"Error in getting searchy_items : {e}")
+        # logger.error(f"Error in getting searchy_items : {e}")
+        frappe.log_error(f"Error in getting searchy_items : {e}")
     
     return data
 
@@ -85,7 +86,8 @@ def get_location(coords):
         result = requests.post(url)
         data = result.json()
     except Exception as e:  
-        logger.error(f"Error in get location function : {e}")
+        frappe.log_error(f"Error in get location function : {e}")
+        # logger.error(f"Error in get location function : {e}")
 
     return data
 
@@ -159,8 +161,7 @@ def fetch_vehicle_positions():
         return vehicles
 
     except Exception as e:
-        logger.error(f"Error in get vehicle positions API : {e}")
-        logger.error(f"Traceback Execution : {traceback.format_exc()}")
+        frappe.log_error(frappe.get_traceback(),f"Error in get vehicle positions API : {e}")
         return []
 
 # @frappe.whitelist()

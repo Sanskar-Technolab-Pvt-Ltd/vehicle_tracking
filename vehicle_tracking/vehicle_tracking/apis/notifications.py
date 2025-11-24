@@ -3,8 +3,8 @@ import requests
 import json
 from vehicle_tracking.vehicle_tracking.apis.common_utils import login, update_session_id
 
-logger = frappe.logger("notifications",file_count=10)
-logger.setLevel("INFO")
+# logger = frappe.logger("notifications",file_count=10)
+# logger.setLevel("INFO")
 
 def update_data_flags():
     try:

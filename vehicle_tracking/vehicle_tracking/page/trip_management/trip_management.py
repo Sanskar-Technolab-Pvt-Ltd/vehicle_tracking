@@ -1,12 +1,12 @@
 import frappe
 import traceback
 from datetime import datetime
-
+import json
 import requests
 from vehicle_tracking.vehicle_tracking.apis.get_wialon_data import wialon_login
 
-logger = frappe.logger("page",file_count=10)
-logger.setLevel("INFO")
+# logger = frappe.logger("page",file_count=10)
+# logger.setLevel("INFO")
 
 @frappe.whitelist()
 def update_trip_status(trip_id,status):
@@ -28,7 +28,8 @@ def update_trip_status(trip_id,status):
         return {"success": True, "trip_id": trip_id, "trip_status":status}
     
     except Exception as e:
-        logger.error(f"Error in update trip status : {e}",frappe.get_traceback())
+        # logger.error(f"Error in update trip status : {e}",frappe.get_traceback())
+        frappe.log_error(f"Error in update trip status : {e}",frappe.get_traceback())
 
 
 def format_timedelta(delta):
@@ -83,8 +84,9 @@ def calculate_delivery_time(trip_id, delivery_id=None):
         return times
 
     except Exception as e:
-        logger.error(f"Error calculating delivery times: {e}")
-        logger.error(traceback.format_exc())
+        # logger.error(f"Error calculating delivery times: {e}")
+        # logger.error(traceback.format_exc())
+        frappe.log_error(f"Error in calculating delivery time: {e}",frappe.get_traceback())
         return {}
 
 
@@ -129,15 +131,22 @@ def mark_delivery_completed(delivery_id):
             "time_taken": time_taken
         }
     except Exception as e:
-        logger.error(f"mark_delivery_completed error: {e}")
-        logger.error(traceback.format_exc())
+        # logger.error(f"mark_delivery_completed error: {e}")
+        # logger.error(traceback.format_exc())
+        frappe.log_error(frappe.get_traceback(),f"mark_delivery_completed error: {e}")
         return {"success": False, "error": str(e)}
 
+#######################################################################
+# bench execute vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.get_trips_by_vehicle --k
+# wargs "{'vehicle_name':'KAQ 443M_APS','trip_status':'Scheduled'}"
+######################################################################
 
 @frappe.whitelist()
 def get_trips_by_vehicle(vehicle_name,trip_status):
     """Fetch trips with delivery notes, completed deliveries, and time taken"""
     result = {}
+    running = {}
+    delivery_locations = {}
 
     try:
         if vehicle_name == "All":
@@ -153,10 +162,31 @@ def get_trips_by_vehicle(vehicle_name,trip_status):
                 fields=["name", "custom_trip_status", "vehicle"]
             )
 
+        # Needed to know which vehicle has ANY running trip
+        all_running_trips = frappe.get_all(
+            "Delivery Trip",
+            filters={"custom_trip_status": "In-Transit"},
+            fields=["name", "vehicle"]
+        )
+
+        # Build running map
+        for t in all_running_trips:
+            v = t.get("vehicle")
+            if v:
+                running[v] = True
+
+        # Ensure vehicles not in running list default to False
+        # (Frontend needs explicit false value)
+        def ensure_vehicle_flag(v):
+            if v not in running:
+                running[v] = False
+
         for trip in trips:
             vehicle = trip.get("vehicle")
             if not vehicle:
                 continue
+
+            ensure_vehicle_flag(vehicle)
 
             # Fetch delivery notes from child table (Delivery Stops)
             stops = frappe.get_all(
@@ -170,12 +200,15 @@ def get_trips_by_vehicle(vehicle_name,trip_status):
             delivery_notes = frappe.get_all(
                 "Delivery Note",
                 filters={"name": ["in", delivery_ids]},
-                fields=["name", "custom_delivery_status"]
+                fields=["name", "custom_delivery_status","custom_location"]
             )
 
             completed_delivery_notes = [
                 dn["name"] for dn in delivery_notes if dn["custom_delivery_status"] == "Completed"
             ]
+
+            for row in delivery_notes:
+                delivery_locations[row["name"]] = row.get("custom_location")
 
             # Calculate time taken for all deliveries in this trip
             delivery_times = calculate_delivery_time(trip["name"])
@@ -186,18 +219,56 @@ def get_trips_by_vehicle(vehicle_name,trip_status):
             result[vehicle].append({
                 "trip_id": trip["name"],
                 "delivery_id": delivery_ids,
+                "delivery_locations": delivery_locations,
                 "completed_delivery_ids": completed_delivery_notes,
                 "delivery_times": delivery_times,
                 "status": trip.get("custom_trip_status")
             })
 
     except Exception as e:
-        logger.error(f"Error in get_trips_by_vehicle: {e}")
-        logger.error(traceback.format_exc())
-        return {}
+        # logger.error(f"Error in get_trips_by_vehicle: {e}")
+        # logger.error(traceback.format_exc())
+        frappe.log_error(frappe.get_traceback(),f"Error in get_trips_by_vehicle: {e}")
+        # return {}
+        return {"trips": {}, "running": {}}
 
-    return result
+    # return result
+    return {
+        "trips":result,
+        "running":running
+    }
 
+# Values Received : MAT-DT-2025-00020, ["MAT-DN-2025-00032"], error
+@frappe.whitelist()
+def store_incomplete_delivery_reason(trip_id, pending_deliveries, reason):
+    
+    try:
+        delivery_list = json.loads(pending_deliveries)
+        for dn in delivery_list:
+            try:
+                dn_doc = frappe.get_doc("Delivery Note", dn)
+                dn_doc.db_set("custom_reason", reason)
+                dn_doc.db_set("custom_update_datetime", datetime.now())
+            except Exception as e:
+                frappe.log_error(f"error in Updating Delivery Note Reason:{e}")
+                return {"success": False}
+
+        frappe.db.set_value(
+            "Delivery Trip", 
+            trip_id, 
+            {
+                "custom_reason": reason,
+                "custom_update_datetime":datetime.now(),
+                "custom_trip_status":"Completed"
+            })
+        
+        frappe.db.commit()
+
+        return {"success": True}
+    
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(),f"Error in store incomplete delivery reason:{e}")
+        return {"success": False}
 
 def get_live_position(vehicle_name):
 
@@ -240,7 +311,8 @@ def get_live_position(vehicle_name):
             longitude = msg[0]['pos']['x']
     
     except Exception as e:
-        logger.error(f"Error in get live position function: {e}",traceback.format_exc())
+        # logger.error(f"Error in get live position function: {e}",traceback.format_exc())
+        frappe.log_error(f"Error in get live position function: {e}",traceback.format_exc())
     
     return latitude,longitude
 
@@ -259,7 +331,7 @@ def send_delivery_completed_email(delivery_id,trip_id):
         """
         # recipients can be static or fetched dynamically
         # recipients = ["kimi@sanskartechnolab.com"]
-        recipients = ["s.darji@apex-steel.com"]
+        recipients = ["kimi@sanskartechnolab.com","s.darji@apex-steel.com"]
 
         frappe.sendmail(
             recipients=recipients,
@@ -267,6 +339,6 @@ def send_delivery_completed_email(delivery_id,trip_id):
             message=message
         )
         
-        logger.info("EMAIL Sent Successfully for Delivery Complete !!!")
+        # logger.info("EMAIL Sent Successfully for Delivery Complete !!!")
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Delivery Email Failed")

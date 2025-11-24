@@ -5,10 +5,158 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
         single_column: true
     });
 
+    page.set_primary_action("Refresh Vehicles", function () {
+    refreshVehiclePositions();}, "refresh");
+
+
     // Append the map div to the wrapper
     $(wrapper).html(`
-        <div id="map" style="width: 100vw; height: 100vh;"></div>
+        <div id="map" style="width: 100vw; height: 100vh; position: relative;"></div>
     `);
+
+    $('#map').append(`
+    <button id="refresh-map-btn"
+        style="
+            position: fixed;
+            top: 125px;
+            left: 10px;
+            z-index: 9999;
+            width: 35px;
+            height: 35px;
+            background: white;
+            color: black;
+            border: none;
+            box-shadow: 0px 2px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;">Refresh</button> `);
+
+    // $('#map').append(`
+    // <button id="reset-map-btn"
+    //     style="
+    //         position: fixed;
+    //         top: 160px;
+    //         left: 10px;
+    //         z-index: 9999;
+    //         width: 35px;
+    //         height: 35px;
+    //         background: white;
+    //         color: black;
+    //         border: none;
+    //         box-shadow: 0px 2px 8px rgba(0,0,0,0.3);
+    //         cursor: pointer;
+    //         font-size: 9px;
+    //         font-weight: bold;
+    //         display: flex;
+    //         align-items: center;
+    //         justify-content: center;">Reset Map</button> `);
+
+    $('#map').append(`
+    <input type="text" id="vehicle-search"
+        placeholder="Search vehicle..."
+        style="
+            position: fixed;
+            top: 60px;
+            left: 50px;
+            width: 180px;
+            padding: 6px 10px;
+            font-size: 13px;
+            border-radius: 6px;
+            border: 1px solid #999;
+            z-index: 9999;
+            background: white;
+        ">
+        `);
+    
+    $(document).on('click', '#refresh-map-btn', function () {refreshVehiclePositions();});
+
+    // --------------------------
+    // SEARCH VEHICLE + ZOOM
+    // --------------------------
+    $(document).on("input", "#vehicle-search", function() {
+        let query = $(this).val().trim().toLowerCase();
+        // if (!query) return;
+
+        // when search bar is empty
+        if (!query){
+
+            clearAllHighlights();
+
+            // Reset map to original center & zoom
+            map.setView([-1.286389, 36.817223], 10, { animate: true });
+
+            // Re-show all vehicles normally (existing markers already there)
+            refreshVehiclePositions();
+
+            return;
+        }
+
+        // find vehicle marker by name
+        for (let id in vehicleMarkers) {
+            let marker = vehicleMarkers[id];
+            let vehicleName = marker.options.icon.options.html.toLowerCase();
+
+            if (vehicleName.includes(query)) {
+                // zoom and highlight
+                map.setView(marker.getLatLng(), 14, { animate: true });
+
+                // simple highlight: bounce effect
+                marker._icon.style.transition = "transform 0.2s ease";
+                marker._icon.style.transform = "scale(1.25)";
+
+                // add highlight glow border
+                marker._icon.style.boxShadow = "0px 0px 12px 4px grey";
+                marker._icon.style.border = "0";
+                marker._icon.style.borderRadius = "50%";
+                marker._icon.style.background = "rgba(135, 206, 250, 0.6)";
+
+                // remove highlight after 3 seconds
+                // setTimeout(() => {
+                //     marker._icon.style.transform = "scale(1)";
+                //     marker._icon.style.boxShadow = "";
+                //     marker._icon.style.border = "";
+                //     marker._icon.style.background = "";
+                // }, 3000);
+
+                // setTimeout(() => {
+                //     marker._icon.style.transform = "scale(1)";
+                // }, 800);
+
+                break;
+            }
+        }
+    });
+
+    // // ----------------------------
+    // // RESET MAP TO DEFAULT
+    // // ----------------------------
+    // // Default map view
+    // const DEFAULT_CENTER = [-1.286389, 36.817223];
+    // const DEFAULT_ZOOM = 10;
+
+    // // Reset Map Button Logic
+    // $(document).on("click", "#reset-map-btn", function () {
+
+    //     console.log("==========",DEFAULT_CENTER,DEFAULT_ZOOM)
+    //     //Reset zoom & center
+    //     map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: true });
+
+    //     //Clear search bar
+    //     $("#vehicle-search").val("");
+
+    //     clearAllHighlights();
+
+    //     // Re-render all vehicles
+    //     refreshVehiclePositions();
+
+    //     frappe.show_alert({
+    //         message: "Map reset to default view",
+    //         indicator: "blue"
+    //     });
+    // });
 
     // Initialize the Leaflet map
     var map = L.map('map').setView([-1.286389, 36.817223], 10); // Kenya center
@@ -52,22 +200,22 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
         });
     }
 
-     // Function to create or update a single vehicle marker
+    // Function to create or update a single vehicle marker
     function showVehicleOnMap(v) {
         var popupContent = `
             <div style="
                 font-family: Arial, sans-serif; 
-                font-size: 10px; 
+                font-size: 11px; 
                 line-height: 1.4; 
-                width: 320px; 
-                max-width: 320px; 
+                width: 450px; 
+                max-width: 450px; 
                 height: auto;
             ">
             <div style="
-                max-height: 220px; 
+                max-height: 350px; 
                 overflow-y: auto; 
                 overflow-x: hidden; 
-                padding-right: 4px;
+                padding-right: 6px;
             ">
                 <h4 style="margin: 0 0 6px; font-size: 12px; font-weight: bold; color: #333;">
                     ${v.name}
@@ -101,6 +249,8 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
                                     <th style="border: 1px solid #ccc; padding: 2px;">Trip ID</th>
                                     <th style="border: 1px solid #ccc; padding: 2px;">Status</th>
                                     <th style="border: 1px solid #ccc; padding: 2px;">Delivery IDs</th>
+                                    <th style="border: 1px solid #ccc; padding: 2px;">Location</th>
+                                    <th style="border: 1px solid #ccc; padding: 2px;">Contact No.</th>
                                     <th style="border: 1px solid #ccc; padding: 2px;">Customer</th>
                                 </tr>
                             </thead>
@@ -110,6 +260,8 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
                                         <td style="border: 1px solid #ccc; padding: 2px; word-break: break-all;">${trip.name}</td>
                                         <td style="border: 1px solid #ccc; padding: 2px;">${trip.custom_trip_status}</td>
                                         <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.name).join('<br>')}</td>
+                                        <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.location).join('<br>')}</td>
+                                        <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.contact_no).join('<br>')}</td>
                                         <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.customer).join('<br>')}</td>
                                     </tr>
                                 `).join('')}
@@ -130,12 +282,31 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
                 icon: createTruckWithArrow(v.direction, v.conn, v.name)
             })
             .addTo(map)
-            .bindPopup(popupContent);
+            .bindPopup(popupContent,{
+                maxWidth: 600,        // increase popup width
+                maxHeight: 500,       // increase popup height
+                autoPanPaddingTopLeft: [50, 50],
+                autoPanPaddingBottomRight: [50, 50],
+            });
 
             marker.on('mouseover', function() { this.openPopup(); });
             // marker.on('mouseout', function() { this.closePopup(); });
 
             vehicleMarkers[v.id] = marker;
+        }
+    }
+
+    // Remove Highlighted Marker 
+    function clearAllHighlights() {
+        for (let id in vehicleMarkers) {
+            let marker = vehicleMarkers[id];
+
+            if (marker && marker._icon) {
+                marker._icon.style.transform = "scale(1)";
+                marker._icon.style.boxShadow = "";
+                marker._icon.style.border = "";
+                marker._icon.style.background = "";
+            }
         }
     }
 
@@ -160,6 +331,18 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
             }
         }
     });
+
+    function refreshVehiclePositions() {
+    frappe.call({
+        method: 'vehicle_tracking.vehicle_tracking.page.vehicle_monitoring.vehicle_monitoring.get_vehicle_positions',
+        callback: function(r) {
+            if (r.message) {
+                showAllVehiclesOnMap(r.message);
+                frappe.show_alert({message: "Vehicle positions refreshed", indicator: "green"});
+            }
+        }
+    });
+}
 
 
     // --------------------------
