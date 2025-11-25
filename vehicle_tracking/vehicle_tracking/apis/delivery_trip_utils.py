@@ -21,7 +21,7 @@ def check_weight_capacity(vehicle,stops):
 
     stops = frappe.parse_json(stops)
 
-    vehicle_capacity = frappe.db.get_value("Vehicle", vehicle, "custom_max_weight_capacity")
+    vehicle_capacity = frappe.db.get_value("Vehicle", vehicle, "max_weight_capacity")
     total_weight = 0
 
     for row in stops:
