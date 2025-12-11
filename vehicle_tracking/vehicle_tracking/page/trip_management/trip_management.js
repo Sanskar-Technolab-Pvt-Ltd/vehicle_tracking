@@ -1,4 +1,47 @@
 frappe.pages['trip-management'].on_page_load = function(wrapper) {
+
+    // ==========================
+    // Adding CSS for Proper Alignment
+    // ==========================
+    $(`<style>
+        .multi-col {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .multi-col > div {
+        min-height: 30px; /* ensures all delivery rows align */
+        display: flex;
+        align-items: center; /* vertical center */
+    }
+
+    .delivery-action {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .delivery-btn {
+        padding: 4px 10px !important;
+        font-size: 12px !important;
+        height: 24px !important;
+        line-height: 14px !important;
+        white-space: nowrap;
+    }
+
+    .delivery-time {
+        text-align: left;
+        font-size: 13px;
+    }
+
+    /* optional: vertically center table cells */
+    .table td, .table th {
+        vertical-align: middle;
+    }
+
+    </style>`).appendTo("head");
+
     var page = frappe.ui.make_app_page({
         parent: wrapper,
         title: 'Trip Management',
@@ -133,39 +176,45 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
             data[vehicle].forEach(trip => {
                 let deliveryHtml = "", buttonHtml = "", timeHtml = "", locationHtml = "";
 
-                if (trip.delivery_id.length > 0) {
-                    trip.delivery_id.forEach(id => {
-                        let isCompleted = trip.completed_delivery_ids && trip.completed_delivery_ids.includes(id);
-                        let timeTaken = (trip.delivery_times && trip.delivery_times[id]) ? trip.delivery_times[id] : "";
-                        let location = (trip.delivery_locations && trip.delivery_locations[id]) ? trip.delivery_locations[id] : "";
+                // Loop all deliveries once & build four aligned columns
+                trip.delivery_id.forEach(id => {
 
-                        // Delivery ID list
-                        deliveryHtml += `<div>${id}</div>`;
+                    let isCompleted = trip.completed_delivery_ids?.includes(id);
+                    let timeTaken = trip.delivery_times?.[id] || "";
+                    let location = trip.delivery_locations?.[id] || "";
 
-                        locationHtml += `<div>${location}</div>`;
+                    let btnClass = isCompleted ? "btn-success" : "btn-info";
+                    let btnText = isCompleted ? "Completed" : "Mark Completed";
+                    let disabled = isCompleted ? "disabled" : "";
 
-                        // Buttons
-                        let btnClass = isCompleted ? "btn-success" : "btn-info"; 
-                        let btnText = isCompleted ? "Completed" : "Mark Completed";
-                        let disabled = isCompleted ? "disabled" : "";
+                    // Delivery ID column
+                    deliveryHtml += `
+                        <div class="delivery-cell delivery-id">${id}</div>
+                    `;
 
-                        buttonHtml += `
-                            <div class="mb-1">
-                                <img src="/assets/vehicle_tracking/icons/complete.png"
-                                style="width:25px; height:25px; margin-right:6px;">
-                                <button class="btn btn-sm ${btnClass} complete-delivery-btn" 
-                                        data-delivery="${id}" ${disabled}>
-                                    ${btnText}
-                                </button>
-                            </div>
-                        `;
+                    // Location column
+                    locationHtml += `
+                        <div class="delivery-cell">${location}</div>
+                    `;
 
-                        // Time column
-                        timeHtml += `<div class="delivery-time" data-delivery="${id}">
-                                        ${isCompleted && timeTaken ? timeTaken : ""}
-                                     </div>`;
-                    });
-                }
+                    // Button column
+                    buttonHtml += `
+                        <div class="delivery-action">
+                            <img src="/assets/vehicle_tracking/icons/complete.png" style="width:18px; height:18px;">
+                            <button class="btn delivery-btn ${btnClass} complete-delivery-btn"
+                                    data-delivery="${id}" ${disabled}>
+                                ${btnText}
+                            </button>
+                        </div>
+                    `;
+
+                    // Time column
+                    timeHtml += `
+                        <div class="delivery-time" data-delivery="${id}">
+                            ${isCompleted ? timeTaken : ""}
+                        </div>
+                    `;
+                });
 
                 // Button styles based on status
                 let startClass = "btn-primary", stopClass = "btn-primary";
@@ -196,16 +245,18 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                                         <button class="btn btn-sm rounded-circle action-btn stop-trip-btn ${stopClass}" 
                                                 data-trip="${trip.trip_id}" title="End Trip" ${stopDisabled}>■</button>
                                     </div>`;
-
+                
                 html += `<tr>
                             <td class="text-center">${actionButtons}</td>
                             <td>${vehicle}</td>
                             <td>${trip.status || ""}</td>
                             <td>${trip.trip_id}</td>
-                            <td>${deliveryHtml}</td>
-                            <td>${locationHtml}</td>
-                            <td>${buttonHtml}</td>
-                            <td>${timeHtml}</td>
+
+                            <!-- FIXED: ALIGN ALL FOUR COLUMNS -->
+                            <td><div class="multi-col">${deliveryHtml}</div></td>
+                            <td><div class="multi-col">${locationHtml}</div></td>
+                            <td><div class="multi-col">${buttonHtml}</div></td>
+                            <td><div class="multi-col">${timeHtml}</div></td>
                         </tr>`;
             });
         });
@@ -297,32 +348,26 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
             );
         });
 
-        // Confirm before stopping trip
         $(".stop-trip-btn").on("click", function() {
             let tripId = $(this).data("trip");
-
-            // Fetch all incomplete deliveries for this trip
             let row = $(this).closest("tr");
+
+            // Collect all delivery IDs
             let deliveries = [];
+            row.find("td:nth-child(5) .delivery-id").each(function() {
+                let val = $(this).text().trim();
+                if (val) deliveries.push(val);
+            });
+
             let completed = [];
-
-            // Collect delivery IDs
-            row.find("td:nth-child(5) div").each(function() {
-                deliveries.push($(this).text());
-            });
-
-            // Collect completed buttons
             row.find(".complete-delivery-btn").each(function() {
-                if ($(this).prop("disabled")) {
-                    completed.push($(this).data("delivery"));
-                }
+                if ($(this).prop("disabled")) completed.push($(this).data("delivery"));
             });
 
-            // Find pending deliveries
             let pending = deliveries.filter(d => !completed.includes(d));
 
-            // CASE 1: All deliveries completed → Directly stop trip
             if (pending.length === 0) {
+                // All deliveries completed → just confirm trip completion
                 frappe.confirm(
                     'Do you really want to complete this trip?',
                     function() {
