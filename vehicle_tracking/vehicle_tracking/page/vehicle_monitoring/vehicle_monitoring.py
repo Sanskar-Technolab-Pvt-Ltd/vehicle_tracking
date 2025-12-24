@@ -135,7 +135,7 @@ def get_vehicle_positions():
                 "driver_number":vehicle_doc.custom_driver_number
                 })
         
-        frappe.publish_realtime(event='live_vehicle_positions', message=vehicle_data, user=None)
+        # frappe.publish_realtime(event='live_vehicle_positions', message=vehicle_data, user=None)
         return vehicle_data
 
     except Exception as e:

@@ -1,4 +1,8 @@
 frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
+    
+    let AUTO_REFRESH_INTERVAL = 10000; // 10 seconds
+    let autoRefreshTimer = null;
+    
     var page = frappe.ui.make_app_page({
         parent: wrapper,
         title: '',
@@ -33,26 +37,6 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
             display: flex;
             align-items: center;
             justify-content: center;">Refresh</button> `);
-
-    // $('#map').append(`
-    // <button id="reset-map-btn"
-    //     style="
-    //         position: fixed;
-    //         top: 160px;
-    //         left: 10px;
-    //         z-index: 9999;
-    //         width: 35px;
-    //         height: 35px;
-    //         background: white;
-    //         color: black;
-    //         border: none;
-    //         box-shadow: 0px 2px 8px rgba(0,0,0,0.3);
-    //         cursor: pointer;
-    //         font-size: 9px;
-    //         font-weight: bold;
-    //         display: flex;
-    //         align-items: center;
-    //         justify-content: center;">Reset Map</button> `);
 
     $('#map').append(`
     <input type="text" id="vehicle-search"
@@ -338,21 +322,29 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
         callback: function(r) {
             if (r.message) {
                 showAllVehiclesOnMap(r.message);
-                frappe.show_alert({message: "Vehicle positions refreshed", indicator: "green"});
+                // frappe.show_alert({message: "Vehicle positions refreshed", indicator: "green"});
             }
         }
     });
 }
 
+    // --------------------------
+    // AUTO REFRESH EVERY 10 SECONDS
+    // --------------------------
+    if (!autoRefreshTimer) {
+        autoRefreshTimer = setInterval(function () {
+            refreshVehiclePositions();
+        }, AUTO_REFRESH_INTERVAL);
+        console.log("Auto refresh function called...")
+    }
 
     // --------------------------
     // Listen to real-time updates
     // --------------------------
-    frappe.realtime.on('live_vehicle_positions', function(vehicles) {
-        // vehicles is a list of vehicle objects
-        // console.log("Data Received========>>>>")
-        showAllVehiclesOnMap(vehicles);
-    });
+    // frappe.realtime.on('live_vehicle_positions', function(vehicles) {
+    //     // vehicles is a list of vehicle objects
+    //     showAllVehiclesOnMap(vehicles);
+    // });
 
     // --------------------------
     // Persistent Notification Panel (Hidden by default, wide)
@@ -425,6 +417,14 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
     $('#vehicle-notification-panel').show();
 
 });
-
+    // --------------------------
+    // CLEANUP INTERVAL ON PAGE DESTROY
+    // --------------------------
+    $(wrapper).on('page:destroy', function () {
+        if (autoRefreshTimer) {
+            clearInterval(autoRefreshTimer);
+            autoRefreshTimer = null;
+        }
+    });
 
 };
