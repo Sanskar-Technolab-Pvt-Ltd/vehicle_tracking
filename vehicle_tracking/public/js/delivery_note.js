@@ -21,10 +21,10 @@ function toggle_vehicle_driver(frm) {
         frm.set_df_property("custom_vehicle_assigned", "read_only", 0);
         frm.set_df_property("custom_driver_assigned", "hidden", 0);
         frm.set_df_property("custom_driver_assigned", "read_only", 0);
-        frm.set_df_property("custom_site_contact_person", "hidden", 0);
-        frm.set_df_property("custom_site_contact_person", "read_only", 0);
-        frm.set_df_property("custom_site_contact_person_number", "hidden", 0);
-        frm.set_df_property("custom_site_contact_person_number", "read_only", 0);
+        // frm.set_df_property("custom_site_contact_person", "hidden", 0);
+        // frm.set_df_property("custom_site_contact_person", "read_only", 0);
+        // frm.set_df_property("custom_site_contact_person_number", "hidden", 0);
+        // frm.set_df_property("custom_site_contact_person_number", "read_only", 0);
     } else {
         // Show + read-only
         frm.set_df_property("custom_vehicle_assigned", "hidden", 0);
