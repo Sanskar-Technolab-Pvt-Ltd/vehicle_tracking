@@ -331,7 +331,7 @@ def send_delivery_completed_email(delivery_id,trip_id):
         """
         # recipients can be static or fetched dynamically
         # recipients = ["kimi@sanskartechnolab.com"]
-        recipients = ["kimi@sanskartechnolab.com","s.darji@apex-steel.com"]
+        recipients = ["s.darji@apex-steel.com"]
 
         frappe.sendmail(
             recipients=recipients,
