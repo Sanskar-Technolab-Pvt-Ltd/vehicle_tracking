@@ -41,77 +41,74 @@ frappe.pages['delivery-routes'].on_page_load = function(wrapper) {
 
     // ===== FUNCTIONS =====
     function loadTripMode() {
-        // $("#mode-input-container").html("<p>Loading trips...</p>");
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Delivery Trip",
-                fields: ["name"],
-                limit_page_length: 1000
-            },
-            callback: function(r) {
-                if (r.message && r.message.length) {
-                    let $select = $(`
-                        <select id="trip-select" class="form-control">
-                            <option value="">Select Trip</option>
-                        </select>
-                    `);
+        $("#mode-input-container").empty();
 
-                    r.message.forEach(v => {
-                        $select.append(`<option value="${v.name}">${v.name}</option>`);
-                    });
+        let $tripFieldWrapper = $('<div></div>');
+        $("#mode-input-container").append($tripFieldWrapper);
 
-                    $("#mode-input-container").html($select);
+        let tripControl = frappe.ui.form.make_control({
+            parent: $tripFieldWrapper,
+            df: {
+                fieldtype: 'Link',
+                label: 'Delivery Trip',
+                fieldname: 'delivery_trip',
+                options: 'Delivery Trip',
+                placeholder: 'Search Delivery Trip',
+                get_query: function () {
+                    return {
+                        filters: {
+                            docstatus: 1,
+                            custom_trip_status: 'Completed'
+                        }
+                    };
+                },
+                onchange: function () {
+                    $("#trip-results-container").empty();
 
-                    $select.on("change", function() {
-                        $("#trip-results-container").empty(); // clear previous map
-                        let selectedTrip = $(this).val();
-                        if (selectedTrip) getRoute({ trip: selectedTrip });
-                    });
-                } else {
-                    $("#mode-input-container").html("<p>No trips found</p>");
+                    let selectedTrip = tripControl.get_value();
+                    if (selectedTrip) {
+                        getRoute({ trip: selectedTrip });
+                    }
                 }
-            }
+            },
+            render_input: true
         });
     }
 
     function loadDelivery() {
-        $("#mode-input-container").html("<p>Loading Delivery Notes..</p>");
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Delivery Note",
-                fields: ["name"],
-                limit_page_length: 1000
-            },
-            callback: function(r) {
-                if (r.message && r.message.length) {
-                    let $select = $(`
-                        <select id="delivery-select" class="form-control">
-                            <option value="">Select Delivery Note</option>
-                        </select>
-                    `);
+        $("#mode-input-container").empty();
 
-                    r.message.forEach(v => {
-                        $select.append(`<option value="${v.name}">${v.name}</option>`);
-                    });
+        let $deliveryFieldWrapper = $('<div></div>');
+        $("#mode-input-container").append($deliveryFieldWrapper);
 
-                    $("#mode-input-container").html($select);
-
-                    $select.on("change", function() {
-                        $("#trip-results-container").empty(); // clear previous map
-                        let selectedDelivery = $(this).val();
-                        if (selectedDelivery) {
-                            getRoute({ delivery: selectedDelivery });
+        let deliverycontrol = frappe.ui.form.make_control({
+            parent: $deliveryFieldWrapper,
+            df: {
+                fieldtype: 'Link',
+                label: 'Delivery Note',
+                fieldname: 'delivery_note',
+                options: 'Delivery Note',
+                placeholder: 'Search Delivery Note',
+                get_query: function () {
+                    return {
+                        filters: {
+                            docstatus: 1,
+                            custom_delivery_status: 'Completed'
                         }
-                    });
-                } else {
-                    $("#mode-input-container").html("<p>No trips found from API</p>");
+                    };
+                },
+                onchange: function () {
+                    $("#trip-results-container").empty();
+
+                    let selectedDelivery = deliverycontrol.get_value();
+                    if (selectedDelivery) {
+                        getRoute({ delivery: selectedDelivery });
+                    }
                 }
-            }
+            },
+            render_input: true
         });
     }
-
 
     function setDefaultDates() {
     let today = new Date();

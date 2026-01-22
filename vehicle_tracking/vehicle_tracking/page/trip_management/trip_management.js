@@ -68,8 +68,20 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                 <label><strong>Trip Status</strong></label>
                 <div id="trip-status-inner"></div>
             </div>
+
+            <div class="col-md-3">
+                <label><strong>Select Date</strong></label>
+                <input type="date" id="trip-date-select" class="form-control" />
+            </div>
         </div>
     `);
+
+    $("#trip-date-select").on("change", function() {
+    let selectedVehicle = $("#vehicle-select").val();
+    let selectedStatus = $("#trip-status-select").val();
+    let selectedDate = $(this).val(); // get date value
+    loadTrips(selectedVehicle, selectedStatus, selectedDate);
+    });
 
     // fetch vehicles from Doctype and build select field
     frappe.call({
@@ -113,13 +125,15 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                 $select.on("change", function() {
                     let selected = $(this).val();
                     let selectedStatus = $("#trip-status-select").val();
-                    loadTrips(selected,selectedStatus);
+                    let selectedDate = $("#trip-date-select").val();
+                    loadTrips(selected,selectedStatus,selectedDate);
                 });
 
                 $statusSelect.on("change", function() {
                     let selectedVehicle = $("#vehicle-select").val();
                     let selectedStatus = $(this).val();
-                    loadTrips(selectedVehicle, selectedStatus);
+                    let selectedDate = $("#trip-date-select").val();
+                    loadTrips(selectedVehicle, selectedStatus,selectedDate);
                 });
 
                 // Restore saved vehicle AFTER binding change event
@@ -133,7 +147,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
     });
 
     // reusable function to load trips
-    function loadTrips(vehicleName,tripStatus) {
+    function loadTrips(vehicleName,tripStatus,tripDate) {
         if (!vehicleName) {
             $("#trip-results-container").html("<p>Please select a vehicle</p>");
             return;
@@ -141,7 +155,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
 
         frappe.call({
             method:"vehicle_tracking.vehicle_tracking.page.trip_management.trip_management.get_trips_by_vehicle",
-            args:{ "vehicle_name": vehicleName, "trip_status": tripStatus},
+            args:{ "vehicle_name": vehicleName, "trip_status": tripStatus,"trip_date": tripDate},
 
             callback:function(r){
                 if (r.message){
@@ -162,6 +176,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                                 <th>Vehicle</th>
                                 <th>Trip Status</th>
                                 <th>Trip ID</th>
+                                <th>Trip Date</th> 
                                 <th>Delivery IDs</th>
                                 <th>Location</th>
                                 <th>Change Delivery Status</th>
@@ -251,6 +266,7 @@ frappe.pages['trip-management'].on_page_load = function(wrapper) {
                             <td>${vehicle}</td>
                             <td>${trip.status || ""}</td>
                             <td>${trip.trip_id}</td>
+                            <td>${trip.date || ""}</td>
 
                             <!-- FIXED: ALIGN ALL FOUR COLUMNS -->
                             <td><div class="multi-col">${deliveryHtml}</div></td>

@@ -142,7 +142,7 @@ def mark_delivery_completed(delivery_id):
 ######################################################################
 
 @frappe.whitelist()
-def get_trips_by_vehicle(vehicle_name,trip_status):
+def get_trips_by_vehicle(vehicle_name,trip_status,trip_date=None):
     """Fetch trips with delivery notes, completed deliveries, and time taken"""
     result = {}
     running = {}
@@ -150,17 +150,49 @@ def get_trips_by_vehicle(vehicle_name,trip_status):
 
     try:
         if vehicle_name == "All":
-            trips = frappe.get_all(
+            
+            if trip_date:
+
+                trip_date_obj = datetime.strptime(trip_date, "%Y-%m-%d")
+                start_datetime = trip_date_obj.strftime("%Y-%m-%d 00:00:00")
+                end_datetime = trip_date_obj.strftime("%Y-%m-%d 23:59:59")
+
+                trips = frappe.get_all(
                 "Delivery Trip",
-                filters={"custom_trip_status": trip_status},
-                fields=["name", "custom_trip_status", "vehicle"]
-            )
+                filters={
+                    "custom_trip_status": trip_status,
+                    "custom_start_time":["between", [start_datetime, end_datetime]],
+                    "docstatus":1},
+                fields=["name", "custom_trip_status", "vehicle","custom_start_time","custom_end_time"])
+
+            else:
+
+                trips = frappe.get_all(
+                    "Delivery Trip",
+                    filters={"custom_trip_status": trip_status,"docstatus":1},
+                    fields=["name", "custom_trip_status", "vehicle","custom_start_time","custom_end_time"]
+                )
         else:
-            trips = frappe.get_all(
-                "Delivery Trip",
-                filters={"vehicle": vehicle_name,"custom_trip_status": trip_status},
-                fields=["name", "custom_trip_status", "vehicle"]
-            )
+            if trip_date:
+                trip_date_obj = datetime.strptime(trip_date, "%Y-%m-%d")
+                start_datetime = trip_date_obj.strftime("%Y-%m-%d 00:00:00")
+                end_datetime = trip_date_obj.strftime("%Y-%m-%d 23:59:59")
+
+                trips = frappe.get_all(
+                    "Delivery Trip",
+                    filters={
+                        "vehicle": vehicle_name,
+                        "custom_trip_status": trip_status,
+                        "custom_start_time": ["between", [start_datetime, end_datetime]],
+                        "docstatus": 1
+                    },
+                    fields=["name", "custom_trip_status", "vehicle","custom_start_time","custom_end_time"])
+            else:
+                trips = frappe.get_all(
+                    "Delivery Trip",
+                    filters={"vehicle": vehicle_name,"custom_trip_status": trip_status,"docstatus":1},
+                    fields=["name", "custom_trip_status", "vehicle","custom_start_time","custom_end_time"]
+                )
 
         # Needed to know which vehicle has ANY running trip
         all_running_trips = frappe.get_all(
@@ -222,7 +254,8 @@ def get_trips_by_vehicle(vehicle_name,trip_status):
                 "delivery_locations": delivery_locations,
                 "completed_delivery_ids": completed_delivery_notes,
                 "delivery_times": delivery_times,
-                "status": trip.get("custom_trip_status")
+                "status": trip.get("custom_trip_status"),
+                "date":trip.get("custom_start_time").date() if trip.get("custom_start_time") else None
             })
 
     except Exception as e:
