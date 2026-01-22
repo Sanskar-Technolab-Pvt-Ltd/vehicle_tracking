@@ -104,7 +104,6 @@ def get_route(trip=None, delivery=None, vehicle=None, start=None, end=None):
                 break
 
             interval_start = last_time + 1
-        # print("======>>>>>>>",all_points)
         return all_points, vehicle_name, driver_details, delivery_details
 
     except Exception as e:

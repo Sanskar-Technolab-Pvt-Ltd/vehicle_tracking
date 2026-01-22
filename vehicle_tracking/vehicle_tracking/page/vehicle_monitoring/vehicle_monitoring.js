@@ -187,75 +187,102 @@ frappe.pages['vehicle-monitoring'].on_page_load = function(wrapper) {
     // Function to create or update a single vehicle marker
     function showVehicleOnMap(v) {
         var popupContent = `
-            <div style="
-                font-family: Arial, sans-serif; 
-                font-size: 11px; 
-                line-height: 1.4; 
-                width: 450px; 
-                max-width: 450px; 
-                height: auto;
-            ">
-            <div style="
-                max-height: 350px; 
-                overflow-y: auto; 
-                overflow-x: hidden; 
-                padding-right: 6px;
-            ">
-                <h4 style="margin: 0 0 6px; font-size: 12px; font-weight: bold; color: #333;">
-                    ${v.name}
-                </h4>
-                <div style="margin-bottom: 6px; font-size: 11px; color: #555;">
-                    <i class="fa fa-map-marker"></i> ${v.location || ''}
-                </div>
-
-                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; flex-wrap: wrap;">
-                    <div><b>Speed:</b> ${v.speed} km/h</div>
-                    <div><b>Direction:</b> ${v.direction}°</div>
-                    <div><b>Vehicle Conn:</b> ${v.conn}</div>
-                </div>
-
-                <h4 style="margin: 6px 0 4px; font-size: 12px; font-weight: bold; color: #333;">
-                    Driver Details
-                </h4>
-                <div style="margin-bottom: 4px; font-size: 11px; color: #555;">
-                    <i class="fa fa-user-circle"></i> ${v.driver_name || ''}
-                </div>
-                <div style="margin-bottom: 6px; font-size: 11px; color: #555;">
-                    <i class="fa fa-mobile-phone"></i> ${v.driver_number || ''}
-                </div>
-
-                ${v.trips && v.trips.length > 0 
-                ? `<h4 style="margin: 6px 0 4px; font-size: 12px; font-weight: bold; color: #333;">Delivery Trips</h4>
-                    <div style="overflow-x: auto; max-height: 120px;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed;">
-                            <thead>
-                                <tr style="background-color: #f7f7f7;">
-                                    <th style="border: 1px solid #ccc; padding: 2px;">Trip ID</th>
-                                    <th style="border: 1px solid #ccc; padding: 2px;">Status</th>
-                                    <th style="border: 1px solid #ccc; padding: 2px;">Delivery IDs</th>
-                                    <th style="border: 1px solid #ccc; padding: 2px;">Location</th>
-                                    <th style="border: 1px solid #ccc; padding: 2px;">Contact No.</th>
-                                    <th style="border: 1px solid #ccc; padding: 2px;">Customer</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${v.trips.map(trip => `
-                                    <tr>
-                                        <td style="border: 1px solid #ccc; padding: 2px; word-break: break-all;">${trip.name}</td>
-                                        <td style="border: 1px solid #ccc; padding: 2px;">${trip.custom_trip_status}</td>
-                                        <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.name).join('<br>')}</td>
-                                        <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.location).join('<br>')}</td>
-                                        <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.contact_no).join('<br>')}</td>
-                                        <td style="border: 1px solid #ccc; padding: 2px;">${trip.delivery_stops.map(stop => stop.customer).join('<br>')}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>`
-                : '<div style="font-size: 10px; color: #888;">No deliveries assigned</div>'
-                }
+        <div style="font-family: Arial, sans-serif;font-size: 11px;line-height: 1.4;width: 600px;max-width: 600px;height: auto;">
+        
+        <div style="max-height: 600px;overflow-y: auto;overflow-x: hidden;padding-right: 6px;">
+            <h4 style="margin: 0 0 6px; font-size: 12px; font-weight: bold; color: #333;">${v.name}</h4>
+            
+            <div style="margin-bottom: 6px; font-size: 11px; color: #555;">
+                <i class="fa fa-map-marker"></i> ${v.location || ''}
             </div>
-            </div>`;
+
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; flex-wrap: wrap;">
+                <div><b>Speed:</b> ${v.speed} km/h</div>
+                <div><b>Direction:</b> ${v.direction}°</div>
+                <div><b>Vehicle Conn:</b> ${v.conn}</div>
+            </div>
+
+            <h4 style="margin: 6px 0 4px; font-size: 12px; font-weight: bold; color: #333;">Driver Details</h4>
+            
+            <div style="margin-bottom: 4px; font-size: 11px; color: #555;">
+                <i class="fa fa-user-circle"></i> ${v.driver_name || ''}
+            </div>
+            
+            <div style="margin-bottom: 6px; font-size: 11px; color: #555;">
+                <i class="fa fa-mobile-phone"></i> ${v.driver_number || ''}
+            </div>
+
+            ${v.trips && v.trips.length > 0 
+            ? `
+            <h4 style="margin: 6px 0 4px; font-size: 12px; font-weight: bold; color: #333;">Delivery Trips</h4>
+
+            <div style="overflow-x: auto; max-height: 150px;">
+                <table style="width: 100%;border-collapse: collapse;font-size: 10px;table-layout: fixed;">
+                    <thead>
+                        <tr style="background-color: #f7f7f7;">
+                            <th style="border: 1px solid #ccc; padding: 2px; width: 80px;">Trip ID</th>
+                            <th style="border: 1px solid #ccc; padding: 2px; width: 80px;">Status</th>
+                            <th style="border: 1px solid #ccc; padding: 2px; width: 90px;">Delivery ID</th>
+                            <th style="border: 1px solid #ccc; padding: 2px; width: 70px;">Delivery Net Weight</th>
+                            <th style="border: 1px solid #ccc; padding: 2px; width: 160px;">Location</th>
+                            <th style="border: 1px solid #ccc; padding: 2px; width: 100px;">Contact</th>
+                            <th style="border: 1px solid #ccc; padding: 2px; width: 140px;">Customer</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                    ${v.trips.map(trip => {
+                        const stops = trip.delivery_stops || [];
+                        const rowspan = stops.length || 1;
+
+                        return stops.length > 0
+                            ? stops.map((stop, index) => `
+                                <tr style="vertical-align: middle;">
+                                    ${index === 0 ? `
+                                        <td rowspan="${rowspan}" style="border: 1px solid #ccc;padding: 4px;text-align: center;vertical-align: middle;word-break: break-word;">
+                                            ${trip.name}
+                                        </td>
+                                        <td rowspan="${rowspan}" style="border: 1px solid #ccc;padding: 4px;text-align: center;vertical-align: middle;">
+                                            ${trip.custom_trip_status}
+                                        </td>
+                                    ` : ''}
+
+                                    <td style="border: 1px solid #ccc;padding: 4px;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;" title="${stop.name || ''}">
+                                        ${stop.name || ''}
+                                    </td>
+
+                                    <td style="border: 1px solid #ccc;padding: 4px;text-align: right;white-space: nowrap;">
+                                        ${stop.weight || ''}
+                                    </td>
+
+                                    <td style="border: 1px solid #ccc;padding: 4px;white-space: normal;word-break: break-word;" title="${stop.location || ''}">
+                                        ${stop.location || ''}
+                                    </td>
+
+                                    <td style="border: 1px solid #ccc;padding: 4px;white-space: nowrap;">
+                                        ${stop.contact_no || ''}
+                                    </td>
+
+                                    <td style="border: 1px solid #ccc;padding: 4px;white-space: normal;word-break: break-word;" title="${stop.customer || ''}">
+                                        ${stop.customer || ''}
+                                    </td>
+                                </tr>`).join(''): `
+
+                                <tr>
+                                    <td style="border: 1px solid #ccc; padding: 4px;">${trip.name}</td>
+                                    <td style="border: 1px solid #ccc; padding: 4px;">${trip.custom_trip_status}</td>
+                                    <td colspan="5" style="border: 1px solid #ccc;padding: 4px;text-align: center;color: #888;">No delivery stops</td>
+                                </tr>
+                            `;
+                    }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            `
+            : '<div style="font-size: 10px; color: #888;">No deliveries assigned</div>'
+            }
+        </div>
+        </div>`;
 
         if (vehicleMarkers[v.id]) {
             vehicleMarkers[v.id].setLatLng([v.lat, v.lon]);

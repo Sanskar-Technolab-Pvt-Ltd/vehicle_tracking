@@ -112,7 +112,8 @@ def get_vehicle_positions():
                         "name":stop.delivery_note,
                         "customer":stop.customer,
                         "location":stop.custom_location,
-                        "contact_no": frappe.db.get_value("Delivery Note",stop.delivery_note,"custom_site_contact_person_number")
+                        "contact_no": frappe.db.get_value("Delivery Note",stop.delivery_note,"custom_site_contact_person_number"),
+                        "weight": frappe.db.get_value("Delivery Note",stop.delivery_note,"total_net_weight")
                         } 
                         for stop in doc.get("delivery_stops")]
 

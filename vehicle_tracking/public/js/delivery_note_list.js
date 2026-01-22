@@ -2,7 +2,7 @@ frappe.listview_settings['Delivery Note'] = {
     add_fields: ["custom_delivery_status"],
     get_indicator: function(doc) {
         if (doc.custom_delivery_status === "Pending") {
-            return [__("Pending"), "grey", "status,=,Pending"];
+            return [__("Delivery Pending"), "grey", "status,=,Pending"];
         }
         if (doc.custom_delivery_status === "Completed") {
             return [__("Completed"), "green", "status,=,Completed"];
