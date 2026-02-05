@@ -28,6 +28,7 @@ frappe.ui.form.on("Delivery Trip", {
         frm.remove_custom_button("Delivery Note", "Get stops from");
 
         if (frm.doc.docstatus === 0 && frm.doc.vehicle) {
+            console.log("fvrdfvcd", frm.doc.vehicle)
             add_delivery_note_button(frm);
         }
 
@@ -35,13 +36,13 @@ frappe.ui.form.on("Delivery Trip", {
         check_weight_capacity(frm);
     },
 
-    delivery_stops_add: function(frm) {
+    delivery_stops_add: function (frm) {
         // console.log("Add stops..........")
         // validate when row added
         check_weight_capacity(frm);
     },
 
-    delivery_stops_remove: function(frm) {
+    delivery_stops_remove: function (frm) {
         // console.log("Remove stop..........")
         // validate when row removed
         check_weight_capacity(frm);
@@ -49,41 +50,47 @@ frappe.ui.form.on("Delivery Trip", {
 });
 
 function add_delivery_note_button(frm) {
+    console.log("Vehicle name", frm.doc.vehicle)
     frappe.call({
         method: "vehicle_tracking.vehicle_tracking.apis.delivery_trip_utils.get_used_delivery_notes",
-        callback: function(r) {
+        args: {
+            custom_vehicle_assigned: frm.doc.vehicle
+        },
+        callback: function (r) {
 
             let used_dn = r.message || [];
+            console.log("used_dn", used_dn)
+            frm.add_custom_button(
+                __("Delivery Note"),
+                () => {
+                    console.log("calling")
 
-        frm.add_custom_button(
-            __("Delivery Note"),
-            () => {
-                erpnext.utils.map_current_doc({
-                    method: "erpnext.stock.doctype.delivery_note.delivery_note.make_delivery_trip",
-                    source_doctype: "Delivery Note",
-                    target: frm,
-                    date_field: "posting_date",
-                    setters: {
-                        company: frm.doc.company,
-                        customer: null,
-                    },
-                    get_query_filters: {
-                        docstatus: 1,
-                        company: frm.doc.company,
-                        custom_vehicle_assigned:frm.doc.vehicle,
-                        status:["Not In", ["Cancelled"]],
-                        custom_delivery_status: ["Not In", ["Completed",]],
-                        name: ["not in", used_dn]
-                    },
+                    erpnext.utils.map_current_doc({
+                        method: "erpnext.stock.doctype.delivery_note.delivery_note.make_delivery_trip",
+                        source_doctype: "Delivery Note",
+                        target: frm,
+                        date_field: "posting_date",
+                        setters: {
+                            company: frm.doc.company,
+                            customer: null,
+                        },
+                        get_query_filters: {
+                            docstatus: 1,
+                            company: frm.doc.company,
+                            custom_vehicle_assigned: frm.doc.vehicle,
+                            status: ["Not In", ["Cancelled"]],
+                            custom_delivery_status: ["Not In", ["Completed",]],
+                            name: ["in", used_dn]
+                        },
 
-                });
-            },
-            __("Get stops from")
-        );
-        auto_fill_locations(frm);
-        // check_weight_capacity(frm);
-    }
-});
+                    });
+                },
+                __("Get stops from")
+            );
+            auto_fill_locations(frm);
+            // check_weight_capacity(frm);
+        }
+    });
 }
 
 // -------------------------------------------------------
@@ -123,7 +130,7 @@ function check_weight_capacity(frm) {
             vehicle: frm.doc.vehicle,
             stops: frm.doc.delivery_stops
         },
-        callback: function(r) {
+        callback: function (r) {
             if (!r.message) return;
             // console.log("==========>>> Weight validation Result :",r.message)
             if (r.message.total_weight > r.message.vehicle_capacity) {

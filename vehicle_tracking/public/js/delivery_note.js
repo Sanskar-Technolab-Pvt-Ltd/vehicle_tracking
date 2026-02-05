@@ -11,6 +11,8 @@ function toggle_vehicle_driver(frm) {
     if (!frm.doc.custom_delivery_details) {
         // If field empty → hide both
         frm.set_df_property("custom_vehicle_assigned", "hidden", 1);
+        frm.set_df_property("custom_vehicle_assigned", "reqd", 0);
+
         frm.set_df_property("custom_driver_assigned", "hidden", 1);
         frm.set_df_property("custom_site_contact_person", "hidden", 1);
         frm.set_df_property("custom_site_contact_person_number", "hidden", 1);
@@ -19,6 +21,7 @@ function toggle_vehicle_driver(frm) {
         // Show + editable
         frm.set_df_property("custom_vehicle_assigned", "hidden", 0);
         frm.set_df_property("custom_vehicle_assigned", "read_only", 0);
+        frm.set_df_property("custom_vehicle_assigned", "reqd", 1);
         frm.set_df_property("custom_driver_assigned", "hidden", 0);
         frm.set_df_property("custom_driver_assigned", "read_only", 0);
         frm.set_df_property("custom_site_contact_person", "hidden", 0);
@@ -29,6 +32,7 @@ function toggle_vehicle_driver(frm) {
         // Show + read-only
         frm.set_df_property("custom_vehicle_assigned", "hidden", 0);
         frm.set_df_property("custom_vehicle_assigned", "read_only", 1);
+        frm.set_df_property("custom_vehicle_assigned", "reqd", 0);
         frm.set_df_property("custom_driver_assigned", "hidden", 0);
         frm.set_df_property("custom_driver_assigned", "read_only", 1);
     }
