@@ -45,7 +45,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-13 11:02:04.125042",
+ "modified": "2026-02-06 18:37:56.860123",
  "modified_by": "Administrator",
  "module": "vehicle tracking",
  "name": "Sessions Management",
@@ -68,5 +68,6 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
