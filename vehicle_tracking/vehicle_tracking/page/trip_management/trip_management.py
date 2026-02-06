@@ -327,7 +327,7 @@ def get_live_position(vehicle_name):
 
     try:
 
-        if 'error' in pos and pos['error'] == 1:
+        if "error" in pos and pos["error"] == 1:
             wialon_login()
 
             Settings = frappe.get_single("Vehicle Tracking Settings")

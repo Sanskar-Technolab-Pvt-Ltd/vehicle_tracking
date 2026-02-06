@@ -23,17 +23,19 @@ def wialon_login():
 
             Settings.wialon_session_id = session_id
             Settings.save(ignore_permissions=True)
-            logger.info(f"Login Successful and Session id updated Sucessfully. New session id : {session_id}")
+            frappe.log_error(f"Login Successful and Session id updated Sucessfully. New session id : {session_id}")
+            # logger.info(f"Login Successful and Session id updated Sucessfully. New session id : {session_id}")
         
         if gis_id:
 
             Settings.wialon_gis_id = gis_id
             Settings.save(ignore_permissions=True)
-            logger.info(f"Login Successful and GIS id updated Sucessfully. New gis id : {gis_id}")
+            frappe.log_error(f"Login Successful and Session id updated Sucessfully. New session id : {session_id}")
+            # logger.info(f"Login Successful and GIS id updated Sucessfully. New gis id : {gis_id}")
             
     except Exception as e:
         # logger.error(f"Error in wialon login : {e}")
-        frappe.log_error(frappe.get_traceback(),f"Error in wialon login : {e}")
+        frappe.log_error(title="Error in wialon Login",message=f"{e}\n{frappe.get_traceback()}")
 
     
 
